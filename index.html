@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pattern Printer – photo to sewing pattern</title>
+<style>
+:root{--bg:#faf6f0;--card:#fff;--ink:#2a2420;--mut:#7a6f66;--acc:#b5446e;--line:#e6ddd2;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1b1715;--card:#26201d;--ink:#f1e9e1;--mut:#a89c91;--acc:#e8809f;--line:#3a312c}}
+:root[data-theme="dark"]{--bg:#1b1715;--card:#26201d;--ink:#f1e9e1;--mut:#a89c91;--acc:#e8809f;--line:#3a312c}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:1100px;margin:0 auto;padding:20px 16px 60px}
+h1{font:600 28px Georgia,serif;margin:0}h2{font:600 16px system-ui;margin:0 0 10px}
+.sub,.stat{color:var(--mut)}.sub{margin:4px 0 18px}.stat{font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;align-items:start}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
+label{display:block;font-size:13px;color:var(--mut);margin:8px 0 3px}
+input,select{width:100%;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
+input[type=range]{padding:0}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.drop{display:block;border:2px dashed var(--acc);border-radius:12px;padding:22px;text-align:center;cursor:pointer;color:var(--acc);font-weight:600;margin:0}
+.drop input{display:none}
+#th{max-width:100%;max-height:220px;border-radius:10px;margin-top:10px;display:none}
+button{background:var(--acc);color:#fff;border:0;border-radius:10px;padding:10px 16px;font:600 14px system-ui;cursor:pointer}
+button.big{width:100%;padding:12px;font-size:15px}
+button.chip{background:var(--bg);color:var(--ink);border:1px solid var(--line);margin:0 6px 6px 0}
+button.chip.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+.it{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
+.it h3{margin:0;font-size:15px;display:flex;justify-content:space-between;align-items:center}
+.it h3 button{padding:3px 9px;background:var(--bg);color:var(--mut);border:1px solid var(--line)}
+.ov{overflow:auto;max-height:70vh}
+#sheets{display:none}
+.sheet{position:relative;background:#fff;overflow:hidden;page-break-after:always;break-after:page}
+#cropw{display:none;margin-top:10px}#cv{width:100%;touch-action:none;border-radius:10px;cursor:crosshair;display:block}
+#thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}.th{background:#fff;border:1px solid var(--line);position:relative}.th svg{display:block;width:100%;height:auto}.th b{position:absolute;left:4px;top:2px;font-size:11px;color:#b5446e}
+@media print{.noprint{display:none!important}.grid{display:block}.card{border:0;padding:0;margin:0;background:#fff}body{background:#fff}.wrap{padding:0;max-width:none}#thumbs{display:block}.th{border:0;overflow:hidden;page-break-after:always;break-after:page}.th b{display:none}}
+</style></head><body><div class="wrap">
+<div class="noprint"><h1>🧵 Pattern Printer</h1><p class="sub">Upload a photo, crop to the garment, pick your size, and get a print-at-home pattern that follows the garment’s shape.</p></div>
+<div class="grid"><div class="noprint">
+<div class="card"><h2>1. Photo</h2>
+<label class="drop">Tap to choose a photo<input type="file" id="f" accept="image/*"></label>
+<div id="cropw"><p class="stat">Drag on the photo to crop around the garment(s), then scan.</p><canvas id="cv"></canvas><div class="row" style="margin-top:8px"><button id="scan">Crop &amp; scan</button><button class="chip" id="full">Use whole photo</button></div></div>
+<p class="stat" id="st">A plain background works best. AI scans the garment’s type and shape for you.</p></div>
+<div class="card"><h2>2. Pick your size</h2><div id="items"><p class="stat">Scan a photo to begin.</p></div>
+<details><summary class="stat" style="cursor:pointer">Add a garment manually</summary><div class="row" style="margin-top:8px"><select id="addt"><option>dress</option><option>top</option><option>skirt</option><option>pants</option><option>shorts</option></select><button id="add">+ Add</button></div></details></div>
+<div class="card" id="scc" style="display:none"><h2>Which patterns do you want?</h2><div id="chips"></div></div>
+</div><div>
+<div class="card noprint"><h2>Full pattern preview</h2><label style="margin:0 0 8px"><input type="checkbox" id="gr" style="width:auto"> Show how it splits into sheets</label><div class="ov" id="ov"></div><p class="stat" id="info"></p></div>
+<div class="card"><div class="noprint"><h2>Download sheets</h2><label>Paper size</label><select id="pp"></select><div class="row" style="margin:12px 0"><button id="dl">Download PDF</button><button id="pr">Print</button></div><p class="stat" id="dls">Print at 100% / Actual size. Sheet 1 has the instructions; every sheet has a 5×5 cm scale check.</p></div><div id="thumbs"></div></div>
+</div></div>
+<style id="pgst"></style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+const $=id=>document.getElementById(id),SA=15,M=25,mg=8,ov=10;
+const PAPERS={A4:[210,297],A3:[297,420],A5:[148,210],A6:[105,148],A2:[420,594],A1:[594,841],A0:[841,1189],B4:[250,353],B5:[176,250],Letter:[215.9,279.4],Legal:[215.9,355.6],Tabloid:[279.4,431.8],Executive:[184.2,266.7],'Half Letter':[139.7,215.9]};
+$('pp').innerHTML=Object.keys(PAPERS).map(k=>`<option>${k}</option>`).join('');
+const SZ={XS:{B:80,W:62,H:86,ht:160},S:{B:84,W:66,H:90,ht:163},M:{B:88,W:70,H:94,ht:165},L:{B:94,W:76,H:100,ht:168},XL:{B:100,W:82,H:106,ht:170}};
+const E={fitted:4,regular:6,loose:12};
+const O={dress:{mini:80,knee:100,midi:120,maxi:145},skirt:{mini:40,knee:58,midi:75,maxi:95},top:{crop:-1,regular:0,tunic:1},pants:{cropped:.8,full:1},shorts:{short:.5,knee:1}};
+const DEF={dress:['knee',120],skirt:['knee',130],top:['regular',100],pants:['full',95],shorts:['short',105]};
+let items=[],scope='all';
+const newItem=t=>({type:t,neck:'round',sleeves:'none',length:DEF[t][0],fit:'regular',flare:DEF[t][1],waist:t=='top'?40:100,size:'M',cus:{...SZ.M}});
+const lbl=i=>{const t=items[i].type,n=items.filter(x=>x.type==t).length,k=items.slice(0,i+1).filter(x=>x.type==t).length;return t[0].toUpperCase()+t.slice(1)+(n>1?' '+k:'')};
+const meas=it=>it.size=='Custom'?it.cus:SZ[it.size];
+const plen=d=>{const p=document.createElementNS('http://www.w3.org/2000/svg','path');p.setAttribute('d',d);return p.getTotalLength()};
+/* ---------- geometry ---------- */
+function bod(p,back,t){
+ const B=p.B,nk=p.nk||'round';let nw=(B/20+3.5)*10,nd=back?22:nw+18;
+ if(nk=='boat'){nw*=1.35;if(!back)nd=35}else if(!back&&nk=='v')nd=nw*1.7;else if(!back&&nk=='square')nd=nw+10;
+ const sh=B*2.1,bw=(B+p.ease)*2.5,ad=(B/8+10)*10,wy=p.ht*2.5,hy=wy+200,h0=(p.H+p.ease)*2.5,ww=h0*(1-p.fit*.4),hw=Math.max(h0,ww);
+ const hemy=t=='top'?wy+[60,210,320][p.v+1]:Math.max(p.v*10*p.ht/165,hy+120),hemw=t=='top'?hw:hw*p.flare;
+ const neck=!back&&nk=='v'?`L${nw} 0`:!back&&nk=='square'?`L${nw} ${nd}L${nw} 0`:`Q${nw*.95} ${nd*.95} ${nw} 0`;
+ const arm=`M${sh} 45C${sh-10} 110 ${bw-40} ${ad-25} ${bw} ${ad}`;
+ const tail=hemy>hy+5?`Q${(ww+hw)/2} ${(wy+hy)/2} ${hw} ${hy}L${hemw} ${hemy}`:`L${ww} ${hemy}`;
+ const d=`M0 ${nd}${neck}L${sh} 45`+arm.slice(arm.indexOf('C'))+`Q${(bw+ww)/2+4} ${(ad+wy)/2} ${ww} ${wy}${tail}L0 ${hemy}Z`;
+ return{d,arm:plen(arm),w:Math.max(bw,hemw,hw,ww),h:hemy,bw,ad,wy};
+}
+function slv(p,f,kind){
+ const bic=(p.B*.32+2)*10,tgt=2*f.arm*1.03;let ch=120,best=1e9;
+ const cap=c=>`M0 ${c}C${bic*.05} ${c*.55} ${bic*.2} 0 ${bic/2} 0C${bic*.8} 0 ${bic*.95} ${c*.55} ${bic} ${c}`;
+ for(let c=60;c<=230;c+=2){const e=Math.abs(plen(cap(c))-tgt);if(e<best){best=e;ch=c}}
+ const sl=kind=='short'?190:570,cw=kind=='short'?bic*.9:bic*.72,i=(bic-cw)/2;
+ return{d:cap(ch)+`L${bic-i} ${sl}L${i} ${sl}Z`,w:bic,h:sl,ch};
+}
+function pant(p,back,short){
+ const wf=(p.W+4)*2.5+(back?10:0),hf=(p.H+6)*2.5+(back?10:0),cd=p.ht*1.6+(p.H-94)+(back?10:0),ce=hf*(back?.38:.22),xc=(hf-ce)/2,hipD=200;
+ const ins=short?(p.v==1?220:90)*p.ht/165:p.ht*4.6*p.v,f=p.flare;
+ const h2=f*(p.H+p.ease)*1.25,hemy=cd+ins;
+ return{d:`M0 0L${wf} 0Q${wf+(hf-wf)*.4} ${hipD*.7} ${hf} ${hipD}L${xc+h2} ${hemy}L${xc-h2} ${hemy}L${-ce} ${cd}Q0 ${cd} 0 ${cd*.5}Z`,x0:-ce,w:Math.max(hf,xc+h2),h:hemy,gx:xc};
+}
+function mk(it,lb){
+ const m=meas(it),t=it.type,p={B:m.B,W:m.W,H:m.H,ht:m.ht,ease:E[it.fit],flare:it.flare/100,fit:it.waist/100,nk:it.neck,v:O[t][it.length]},out=[];
+ const A=(n,note,g,o)=>out.push({n:lb+' '+n,note,fold:0,x0:0,...g,...o});
+ const band=()=>{const L=(p.W+4)*10+30;A('WAISTBAND','Cut 1',{d:`M0 0H${L}V80H0Z`,w:L,h:80},{gx:L/2,g1:15,g2:65,ty:45})};
+ if(t=='dress'||t=='top'){
+  const a=bod(p,0,t),b=bod(p,1,t);
+  A('FRONT','Cut 1 on fold',a,{fold:1,gx:a.bw*.45,g1:a.ad+30,g2:a.h-40,ty:a.wy});
+  A('BACK','Cut 1 on fold',b,{fold:1,gx:b.bw*.45,g1:b.ad+30,g2:b.h-40,ty:b.wy});
+  if(it.sleeves!='none'){const s=slv(p,a,it.sleeves);A('SLEEVE','Cut 2',s,{gx:s.w/2,g1:s.ch+20,g2:s.h-20,ty:s.ch+60})}
+ }else if(t=='skirt'){
+  const wt=(p.W+4)*2.5,hp=(p.H+4)*2.5,hd=200,ly=Math.max(p.v*10*p.ht/165,hd+40),hm=hp*p.flare;
+  A('PANEL','Cut 2 on fold (front + back)',{d:`M0 0L${wt} 0Q${(wt+hp)/2} ${hd*.55} ${hp} ${hd}L${hm} ${ly}L0 ${ly}Z`,w:Math.max(hm,hp),h:ly},{fold:1,gx:hp*.45,g1:60,g2:ly-40,ty:hd});band();
+ }else{
+  const sh=t=='shorts',f=pant(p,0,sh),b=pant(p,1,sh);
+  A('FRONT','Cut 2 (mirror pair)',f,{g1:80,g2:f.h-40,ty:f.h*.5});
+  A('BACK','Cut 2 (mirror pair)',b,{g1:80,g2:b.h-40,ty:b.h*.5});band();
+ }
+ return out;
+}
+/* ---------- drawing ---------- */
+function content(u,L,title){
+ let s=`<rect width="${L.W}" height="${L.H}" fill="#fff"/><rect x="${M}" y="${M}" width="50" height="50" fill="none" stroke="#000" stroke-width=".6"/><text x="${M+25}" y="${M+27}" font-size="6" text-anchor="middle" fill="#000">5 × 5 cm</text><text x="${M+25}" y="${M+36}" font-size="4" text-anchor="middle" fill="#000">check scale</text><text x="${M+65}" y="${M+22}" font-size="9" fill="#000" font-family="Georgia,serif">${title}</text><text x="${M+65}" y="${M+36}" font-size="5" fill="#000">Solid outer line = cut · dashed line = sew · seam allowance 1.5 cm</text>`;
+ L.pcs.forEach((c,i)=>{
+  const id=u+'c'+i;
+  s+=`<g transform="translate(${c.ox} ${c.oy})">`+(c.fold?`<clipPath id="${id}"><rect x="0" y="-60" width="${c.w+80}" height="${c.h+120}"/></clipPath><g clip-path="url(#${id})">`:'<g>');
+  s+=`<path d="${c.d}" fill="none" stroke="#222" stroke-width="${2*SA+.8}" stroke-linejoin="round"/><path d="${c.d}" fill="none" stroke="#fff" stroke-width="${2*SA}" stroke-linejoin="round"/><path d="${c.d}" fill="#fff" stroke="#b5446e" stroke-width=".7" stroke-dasharray="4 2"/></g>`;
+  if(c.fold)s+=`<line x1="0" y1="0" x2="0" y2="${c.h}" stroke="#222" stroke-width="1.4"/><text transform="translate(8 ${c.h/2}) rotate(-90)" font-size="6" fill="#222" text-anchor="middle">FOLD</text>`;
+  s+=`<line x1="${c.gx}" y1="${c.g1}" x2="${c.gx}" y2="${c.g2}" stroke="#222" stroke-width=".8"/><path d="M${c.gx} ${c.g1}l-3 8h6zM${c.gx} ${c.g2}l-3 -8h6z" fill="#222"/><text x="${c.gx+8}" y="${c.ty}" font-size="10" font-weight="700" fill="#222">${c.n}</text><text x="${c.gx+8}" y="${c.ty+10}" font-size="6" fill="#222">${c.note}</text><text x="${c.gx+8}" y="${c.ty+18}" font-size="5" fill="#555">grainline ↕</text></g>`;
+ });
+ return s;
+}
+const col=c=>String.fromCharCode(65+c);
+function mapSvg(cols,rows,need,cs,cur,txt){let s='';for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){const n=need[r][c],on=cur&&cur[0]==r&&cur[1]==c;s+=`<rect x="${c*cs}" y="${r*cs}" width="${cs}" height="${cs}" fill="${on?'#b5446e':n?'#f4e3ea':'#fff'}" stroke="#888" stroke-width="${cs/25}" ${n?'':'stroke-dasharray="2 2"'}/>`+(txt&&n?`<text x="${c*cs+cs/2}" y="${r*cs+cs/2+cs*.08}" font-size="${cs*.3}" text-anchor="middle" fill="#000">${r+1}${col(c)}</text>`:'')}return s}
+/* ---------- build ---------- */
+let SV=[];
+const wrapT=(s,n)=>{const o=[];let l='';s.split(' ').forEach(w=>{if((l+' '+w).length>n){o.push(l);l=w}else l=l?l+' '+w:w});o.push(l);return o};
+function build(){
+ if(!items.length){$('ov').innerHTML='<p class="stat">Scan a photo to see your pattern.</p>';$('thumbs').innerHTML='';$('info').textContent='';SV=[];return}
+ const act=scope=='all'?items.map((_,i)=>i):[+scope],[PW,PH]=PAPERS[$('pp').value],pw=PW-2*mg,ph=PH-2*mg,sx=pw-ov,sy=ph-ov;
+ $('pgst').textContent=`@page{size:${PW}mm ${PH}mm;margin:0}@media print{.th{width:${PW}mm;height:${PH}mm}}`;
+ const pcs=[];act.forEach(i=>pcs.push(...mk(items[i],lbl(i).toUpperCase())));
+ const maxW=Math.max(3*sx,...pcs.map(c=>c.w-c.x0+SA*2+40));let x=M,y=M+75,rh=0,Wd=0;
+ pcs.forEach(c=>{const w=c.w-c.x0;if(x>M&&x+w+SA*2>maxW){x=M;y+=rh+SA*2+25;rh=0}c.ox=x-c.x0+(c.fold?0:SA);c.oy=y;x+=w+SA*2+25;rh=Math.max(rh,c.h);Wd=Math.max(Wd,x)});
+ const L={pcs,W:Wd+M,H:y+rh+SA+M};
+ const bb=[[M-2,M-2,M+400,M+55],...pcs.map(c=>[c.ox+c.x0-SA,c.oy-SA,c.ox+c.w+SA,c.oy+c.h+SA])];
+ const cols=Math.max(1,Math.ceil((L.W-ov)/sx)),rows=Math.max(1,Math.ceil((L.H-ov)/sy)),need=[];let cnt=0;
+ for(let r=0;r<rows;r++){need[r]=[];for(let c=0;c<cols;c++){const a=c*sx,b=r*sy,n=bb.some(q=>q[0]<a+pw&&q[2]>a&&q[1]<b+ph&&q[3]>b);need[r][c]=n;if(n)cnt++}}
+ const title='Pattern: '+act.map(i=>`${lbl(i)} ${items[i].size}`).join(' + ');
+ let grid='';for(let r=0;r<rows;r++)for(let c=0;c<cols;c++)grid+=need[r][c]?`<rect x="${c*sx}" y="${r*sy}" width="${pw}" height="${ph}" fill="none" stroke="#b5446e" stroke-width="1.5" stroke-dasharray="8 5"/><text x="${c*sx+pw/2}" y="${r*sy+ph/2}" font-size="${Math.min(pw,ph)/5}" text-anchor="middle" fill="#b5446e" opacity=".25">${r+1}${col(c)}</text>`:'';
+ $('ov').innerHTML=`<svg viewBox="0 0 ${L.W} ${L.H}" style="width:100%;display:block;background:#fff;border-radius:8px">${content('o',L,title)}${$('gr').checked?grid:''}</svg>`;
+ const W=i=>`<svg xmlns="http://www.w3.org/2000/svg" width="${PW}mm" height="${PH}mm" viewBox="0 0 ${PW} ${PH}" font-family="Arial,sans-serif"><rect width="${PW}" height="${PH}" fill="#fff"/>${i}</svg>`;
+ const fs=Math.max(2.4,Math.min(4,PW/52)),nc=Math.floor((PW-2*mg-12)/(fs*.52));let ty=mg+fs*3,ins=`<text x="${mg+6}" y="${ty}" font-size="${fs*2}" font-family="Georgia,serif" font-weight="700" fill="#000">Start here</text>`;ty+=fs*3;
+ const T=(t,b)=>wrapT(t,nc).forEach(l=>{ins+=`<text x="${mg+6}" y="${ty}" font-size="${fs}" ${b?'font-weight="700"':''} fill="#000">${l}</text>`;ty+=fs*1.5});
+ T(`${title} · ${$('pp').value} · ${cnt} pattern sheets in a ${cols} × ${rows} grid (empty squares need no printing)`,1);ty+=fs;
+ ['1. Measure the 5 × 5 cm square on sheet 1. If it is not 5 cm, reprint at 100% / Actual size.','2. On every sheet cut off the LEFT and TOP margins along the solid scissor line. Keep the shaded tabs on the right and bottom.','3. Start at the top-left sheet. Lay the next sheet’s trimmed edge over the shaded tab, match the pattern lines, and tape.','4. Join each row, then join the rows. Use the map below and the labels (1A, 1B…).','5. Cut along the solid outer line, sew on the dashed line (1.5 cm seam allowance). Follow the fold and grainline marks.'].forEach(t=>T(t));
+ ty+=fs;T('Pieces',1);pcs.forEach(c=>T('• '+c.n+' — '+c.note));
+ const cm=Math.max(2,Math.min(10,(PW-2*mg-12)/cols,(PH-ty-mg-8)/rows));ins+=`<g transform="translate(${mg+6} ${ty+fs})">${mapSvg(cols,rows,need,cm,null,1)}</g>`;
+ SV=[W(ins)];const labs=['Start here'];
+ for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){if(!need[r][c])continue;
+  const x0=c*sx,y0=r*sy,lb=`${r+1}${col(c)}`,cs=Math.min(4,30/Math.max(cols,rows)),tab='fill="#b5446e" fill-opacity=".1" stroke="#b5446e" stroke-width=".3" stroke-dasharray="2 1.5"';
+  SV.push(W(`<svg x="${mg}" y="${mg}" width="${pw}" height="${ph}" viewBox="${x0} ${y0} ${pw} ${ph}">${content('s'+r+'_'+c,L,title)}`
+  +(c<cols-1?`<rect x="${x0+pw-ov}" y="${y0}" width="${ov}" height="${ph}" ${tab}/><text transform="translate(${x0+pw-3} ${y0+ph/2}) rotate(-90)" font-size="3.5" text-anchor="middle" fill="#000">TAB: goes under ${r+1}${col(c+1)}</text>`:'')
+  +(r<rows-1?`<rect x="${x0}" y="${y0+ph-ov}" width="${pw}" height="${ov}" ${tab}/><text x="${x0+pw/2}" y="${y0+ph-3.5}" font-size="3.5" text-anchor="middle" fill="#000">TAB: goes under ${r+2}${col(c)}</text>`:'')
+  +`<path d="M${x0} ${y0+ph}V${y0}H${x0+pw}" fill="none" stroke="#000" stroke-width=".5"/><text x="${x0+pw/2}" y="${y0+4}" font-size="3.5" text-anchor="middle" fill="#000">✂ cut along line${r>0?' · lay over '+r+col(c):''}</text><text transform="translate(${x0+4} ${y0+ph/2}) rotate(-90)" font-size="3.5" text-anchor="middle" fill="#000">✂ cut along line${c>0?' · lay over '+(r+1)+col(c-1):''}</text>`
+  +`<rect x="${x0+5}" y="${y0+ph-ov-cs*rows-8}" width="${cs*cols+4}" height="${cs*rows+4}" fill="#fff"/><g transform="translate(${x0+7} ${y0+ph-ov-cs*rows-6})">${mapSvg(cols,rows,need,cs,[r,c])}</g><text x="${x0+pw-ov-3}" y="${y0+ph-ov-3}" font-size="9" font-weight="700" text-anchor="end" fill="#b5446e">${lb}</text></svg>`));labs.push('Sheet '+lb);
+ }
+ $('thumbs').innerHTML=SV.map((v,i)=>`<div class="th"><b>${labs[i]}</b>${v}</div>`).join('');
+ $('info').textContent=`${Math.round(L.W/10)} × ${Math.round(L.H/10)} cm pattern · ${cnt} pattern sheets + 1 instruction sheet on ${$('pp').value}`;
+ $('dl').textContent=`Download PDF (${SV.length} sheets)`;
+}
+/* ---------- UI ---------- */
+const sel=(k,o,v,l)=>`<label>${l}<select data-k="${k}">${o.map(x=>`<option${x==v?' selected':''}>${x}</option>`).join('')}</select></label>`;
+const rng=(k,v,l,a,b)=>`<label>${l}<input type="range" data-k="${k}" min="${a}" max="${b}" value="${v}"></label>`;
+function renderItems(){
+ $('items').innerHTML=items.length?items.map((it,i)=>{const t=it.type,cu=it.cus,wp=t=='dress'||t=='top',lg=t=='pants'||t=='shorts';
+  return `<div class="it" data-i="${i}"><h3>${lbl(i)}<button data-rm="1">Remove</button></h3><p class="stat" style="margin:2px 0 6px">${it.desc||t+' · '+it.length}</p>${sel('size',[...Object.keys(SZ),'Custom'],it.size,'Size')}`
+  +(it.size=='Custom'?`<div class="row">${['B','W','H','ht'].map(k=>`<label>${{B:'Bust',W:'Waist',H:'Hip',ht:'Height'}[k]} cm<input type="number" data-c="1" data-k="${k}" value="${cu[k]}"></label>`).join('')}</div>`:'')
+  +`<details><summary class="stat" style="cursor:pointer;margin-top:8px">Customize (optional)</summary><div class="row">${sel('type',Object.keys(O),t,'Garment')}${sel('length',Object.keys(O[t]),it.length,'Length')}</div><div class="row">${sel('fit',Object.keys(E),it.fit,'Fit')}${wp?sel('sleeves',['none','short','long'],it.sleeves,'Sleeves'):''}</div>`
+  +(wp?sel('neck',['round','v','square','boat'],it.neck,'Neckline'):'')+(t=='top'?'':rng('flare',it.flare,lg?'Leg width':'Skirt flare',lg?50:100,lg?150:210))+(wp?rng('waist',it.waist,'Waist shaping',0,100):'')+'</details></div>'}).join(''):'<p class="stat">Scan a photo to begin.</p>';
+ if(scope!='all'&&!items[+scope])scope='all';
+ $('scc').style.display=items.length>1?'block':'none';
+ $('chips').innerHTML=`<p class="stat">I found ${items.length} garments. Print:</p><button class="chip${scope=='all'?' on':''}" data-s="all">All ${items.length} garments</button>`+items.map((_,i)=>`<button class="chip${scope==i?' on':''}" data-s="${i}">${lbl(i)} only</button>`).join('');
+}
+$('items').addEventListener('input',e=>{const t=e.target,k=t.dataset.k;if(!k)return;const i=+t.closest('[data-i]').dataset.i,it=items[i],v=t.type=='range'||t.type=='number'?+t.value:t.value;
+ if(t.dataset.c)it.cus[k]=v;else if(k=='type'){const c=it.cus,z=it.size;items[i]=Object.assign(newItem(v),{cus:c,size:z})}else{it[k]=v;it.desc=''}
+ if(k=='type'||k=='size')renderItems();build()});
+$('items').addEventListener('click',e=>{if(e.target.dataset.rm){items.splice(+e.target.closest('[data-i]').dataset.i,1);scope='all';renderItems();build()}});
+$('chips').addEventListener('click',e=>{if(e.target.dataset.s!=null){scope=e.target.dataset.s;renderItems();build()}});
+$('add').onclick=()=>{items.push(newItem($('addt').value));renderItems();build()};
+$('pp').onchange=build;$('gr').onchange=build;$('pr').onclick=()=>window.print();
+const rast=(s,PW,PH)=>new Promise((ok,no)=>{const u=URL.createObjectURL(new Blob([s],{type:'image/svg+xml;charset=utf-8'})),i=new Image();i.onload=()=>{const k=Math.min(5.9,3000/Math.max(PW,PH)),c=document.createElement('canvas');c.width=Math.round(PW*k);c.height=Math.round(PH*k);const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(i,0,0,c.width,c.height);URL.revokeObjectURL(u);ok(c.toDataURL('image/jpeg',.85))};i.onerror=no;i.src=u});
+$('dl').onclick=async()=>{const b=$('dl'),t=b.textContent,[PW,PH]=PAPERS[$('pp').value];if(!SV.length)return;b.disabled=true;b.textContent='Building PDF…';
+ try{const pdf=new window.jspdf.jsPDF({unit:'mm',format:[PW,PH],orientation:'p'});
+  for(let i=0;i<SV.length;i++){const im=await rast(SV[i],PW,PH);if(i)pdf.addPage([PW,PH],'p');pdf.addImage(im,'JPEG',0,0,PW,PH)}
+  const nm=`sewing-pattern-${$('pp').value}.pdf`,d=window.claude?await claude.use('downloads'):null;
+  if(d)await d.save({filename:nm,data:pdf.output('blob')});else pdf.save(nm);
+ }catch(e){$('dls').textContent='Couldn’t save the PDF ('+(e&&(e.code||e.message)||'error')+'). Use Print, then Save as PDF.'}
+ b.disabled=false;b.textContent=t};
+/* ---------- crop + scan ---------- */
+let src=null,crop=null,drag=null;const cv=$('cv'),st=t=>$('st').textContent=t;
+$('f').onchange=e=>{const f=e.target.files[0];if(!f)return;const i=new Image();i.onload=()=>{src=i;const k=Math.min(1,640/i.width);cv.width=Math.round(i.width*k);cv.height=Math.round(i.height*k);crop=null;$('cropw').style.display='block';drawCrop()};i.src=URL.createObjectURL(f)};
+function drawCrop(){const x=cv.getContext('2d');x.drawImage(src,0,0,cv.width,cv.height);if(crop){const[a,b,c,d]=crop;x.fillStyle='rgba(0,0,0,.5)';x.fillRect(0,0,cv.width,b);x.fillRect(0,d,cv.width,cv.height-d);x.fillRect(0,b,a,d-b);x.fillRect(c,b,cv.width-c,d-b);x.strokeStyle='#fff';x.lineWidth=2;x.strokeRect(a,b,c-a,d-b)}}
+const pos=e=>{const r=cv.getBoundingClientRect();return[Math.max(0,Math.min(cv.width,(e.clientX-r.left)*cv.width/r.width)),Math.max(0,Math.min(cv.height,(e.clientY-r.top)*cv.height/r.height))]};
+cv.onpointerdown=e=>{drag=pos(e);cv.setPointerCapture(e.pointerId)};
+cv.onpointermove=e=>{if(!drag)return;const p=pos(e);crop=[Math.min(drag[0],p[0]),Math.min(drag[1],p[1]),Math.max(drag[0],p[0]),Math.max(drag[1],p[1])];drawCrop()};
+cv.onpointerup=()=>drag=null;
+function getCrop(whole){const k=src.width/cv.width;const[a,b,c,d]=!whole&&crop&&crop[2]-crop[0]>20&&crop[3]-crop[1]>20?crop:[0,0,cv.width,cv.height],sw=(c-a)*k,sh=(d-b)*k,s=Math.min(1,1024/Math.max(sw,sh)),o=document.createElement('canvas');o.width=Math.round(sw*s);o.height=Math.round(sh*s);o.getContext('2d').drawImage(src,a*k,b*k,sw,sh,0,0,o.width,o.height);return o}
+function maskOf(c){const k=Math.min(1,200/c.width),w=Math.max(1,Math.round(c.width*k)),h=Math.max(1,Math.round(c.height*k)),t=document.createElement('canvas');t.width=w;t.height=h;const x=t.getContext('2d');x.drawImage(c,0,0,w,h);const d=x.getImageData(0,0,w,h).data;
+ const bg=[0,1,2].map(q=>{const a=[];for(let i=0;i<w;i++)a.push(d[i*4+q],d[((h-1)*w+i)*4+q]);for(let j=0;j<h;j++)a.push(d[j*w*4+q],d[(j*w+w-1)*4+q]);return a.sort((m,n)=>m-n)[a.length>>1]});
+ const mk=new Uint8Array(w*h);for(let i=0;i<w*h;i++)mk[i]=Math.hypot(d[i*4]-bg[0],d[i*4+1]-bg[1],d[i*4+2]-bg[2])>45?1:0;return{mk,w,h}}
+function prof(m,b,f){const X0=Math.floor(b[0]*m.w),X1=Math.ceil(b[2]*m.w),Y0=b[1]*m.h,H=(b[3]-b[1])*m.h;
+ const at=q=>{const a=[];for(let y=Math.round(Y0+(q-.03)*H);y<=Math.round(Y0+(q+.03)*H);y++){if(y<0||y>=m.h)continue;let l=-1,r=-1;for(let x=X0;x<X1&&x<m.w;x++)if(m.mk[y*m.w+x]){if(l<0)l=x;r=x}if(l>=0)a.push(r-l)}return a.sort((p,q)=>p-q)[a.length>>1]||0};
+ return{wa:at(f[0]),hi:at(f[1]),he:at(f[2])}}
+function shapeItem(n,m,box,wy,hy){const f=prof(m,box,[wy,hy,.95]);if(f.hi<10||f.wa<5)return false;
+ const wr=Math.min(1.05,Math.max(.55,f.wa/f.hi)),he=f.he/f.hi,lg=n.type=='pants'||n.type=='shorts';
+ if(n.type=='dress'||n.type=='top')n.waist=Math.round(Math.min(1,Math.max(0,(1-wr)/.4))*100);
+ if(n.type=='dress'||n.type=='skirt')n.flare=Math.round(Math.min(2.1,Math.max(1,he))*100);
+ if(lg)n.flare=Math.round(Math.min(1.5,Math.max(.5,he))*100);return true}
+const PROMPT=`You are a sewing pattern assistant. The image shows an outfit. List every distinct garment that can be patterned, each as one of: dress, top, skirt, pants, shorts (shirts, tees, blouses, jackets and sweaters count as "top"; a jumpsuit is "top" plus "pants"). Return ONLY JSON: {"items":[{"type":"dress|top|skirt|pants|shorts","sleeves":"none|short|long","length":"dress/skirt: mini|knee|midi|maxi; top: crop|regular|tunic; pants: cropped|full; shorts: short|knee","fit":"fitted|regular|loose","neckline":"round|v|square|boat","box":[x0,y0,x1,y1],"waistY":number,"hipY":number,"flare":number,"waist":number}]}. box is that garment's tight bounding box as fractions 0-1 of image width and height (top of garment to hem). waistY and hipY are the fractions 0-1 of the garment's height (from its top) at the narrowest waist and widest hip. flare is 100-210: hem width / hip width x100 for dress or skirt; for pants or shorts the combined hem width of both legs / hip width x100 between 50 and 150. waist is 0-100: 0 for boxy and 100 for strongly fitted at the waist. Omit sleeves and neckline for skirt, pants and shorts.`;
+const num=(v,a,b,d)=>+v>=a&&+v<=b?+v:d;
+async function scan(whole){
+ if(!src)return;const c=getCrop(whole),m=maskOf(c);let got=[],note='';
+ st('Scanning your photo…');
+ try{const sample=window.claude?await claude.use('sample'):null;
+  if(!sample)note='AI isn’t available in this view, so I used the outline of the garment only. ';
+  else{const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',.85)),r=await sample.json(PROMPT,{images:[blob],modelTier:'default'});
+   got=(r.items||[]).filter(x=>x&&O[x.type]).slice(0,5).map(x=>{const n=newItem(x.type),wp=x.type=='dress'||x.type=='top';
+    if(O[x.type][x.length]!=null)n.length=x.length;if(E[x.fit])n.fit=x.fit;
+    if(wp&&['none','short','long'].includes(x.sleeves))n.sleeves=x.sleeves;if(wp&&['round','v','square','boat'].includes(x.neckline))n.neck=x.neckline;
+    const lg=x.type=='pants'||x.type=='shorts';n.flare=Math.round(num(x.flare,lg?50:100,lg?150:210,n.flare));n.waist=Math.round(num(x.waist,0,100,n.waist));
+    const b=Array.isArray(x.box)&&x.box.length==4&&x.box[2]>x.box[0]&&x.box[3]>x.box[1]?x.box.map(Number):[0,0,1,1],ok=shapeItem(n,m,b,num(x.waistY,.1,.9,.42),num(x.hipY,.1,1,.6));
+    n.desc=`${n.type} · ${n.length}${wp&&n.sleeves!='none'?' · '+n.sleeves+' sleeves':''}${wp?' · '+n.neck+' neck':''} · ${ok?'shape traced from your photo':'shape estimated'}`;return n})}
+ }catch(e){note='AI scan didn’t work ('+(e&&e.code||'error')+'), so I used the outline only. '}
+ if(!got.length){const n=newItem('dress');n.desc='dress · shape traced from outline';shapeItem(n,m,[0,0,1,1],.42,.6);got=[n]}
+ items=got;scope='all';renderItems();build();
+ st(note+`Found: ${got.map((_,i)=>lbl(i)).join(' + ')}. Just pick your size${got.length>1?' for each and choose which patterns to print':''}.`)
+}
+$('scan').onclick=()=>scan(false);$('full').onclick=()=>scan(true);
+items=[];renderItems();build();
+</script></div></body></html>
