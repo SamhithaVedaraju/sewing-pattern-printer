@@ -1,24 +1,24 @@
 # Roadmap
 
 Ideas for making Pattern Printer more useful, especially for people who are new to sewing.
-Status: **In progress** = being built now · **Done** = shipped · no tag = idea.
+Status: **Done** = shipped · **In progress** = being built now · no tag = idea.
 
 ## Teaching beginners
-- **Step-by-step sewing instructions** (In progress) – numbered, plain-language steps generated for the exact pattern you chose, with small diagrams.
-- **Skill levels** – simpler beginner versions of each garment (elastic waist, sleeveless, facings instead of collars).
+- **Step-by-step sewing instructions** (Done) – numbered, plain-language steps generated for the exact pattern you chose, with small diagrams.
+- **Skill levels** – simpler beginner versions of each garment (elastic waist, sleeveless, facings instead of collars). Started: skirts, pants and shorts can already use an elastic waist.
 - **Technique library** – short illustrated guides to seam allowance, grainline, finishing edges, hemming, darts, elastic and easing sleeves.
-- **Glossary popups** (In progress) – tap any sewing word in the app to see a short definition.
+- **Glossary popups** (Done) – tap any sewing word in the app to see a short definition.
 
 ## Getting a good fit
-- **Measurement guide** (In progress) – a diagram and tips showing where and how to measure bust, waist, hip and height.
-- **Size recommendation** (In progress) – enter your measurements to get the closest size, with grading between sizes when bust, waist and hip differ.
+- **Measurement guide** (Done) – a diagram and tips showing where and how to measure bust, waist, hip and height.
+- **Size recommendation** (Done) – enter your measurements to get the closest size, with grading between sizes when bust, waist and hip differ.
 - **Fit-fix helper** – answer "too tight at…" style questions and the pattern adjusts itself.
 
 ## Planning and shopping
-- **Fabric calculator** (In progress) – how much fabric to buy for 110 cm and 150 cm wide fabric.
-- **Cutting layout** (In progress) – a diagram of the pieces laid out on folded fabric, with fold and grainline respected.
-- **Supplies list** (In progress) – thread, zipper or elastic, interfacing and anything else the pattern needs.
-- **Fabric suggestions** (In progress) – beginner-friendly fabrics for each garment and difficulty level.
+- **Fabric calculator** (Done) – how much fabric to buy for 110 cm and 150 cm wide fabric.
+- **Cutting layout** (Done) – a diagram of the pieces laid out on folded fabric, with fold and grainline respected.
+- **Supplies list** (Done) – thread, zipper or elastic, interfacing and anything else the pattern needs.
+- **Fabric suggestions** (Done) – beginner-friendly fabrics for each garment and difficulty level.
 
 ## Practice and motivation
 - **Stitching practice sheets** – printable lines, curves and corners to sew along on paper before touching fabric.
