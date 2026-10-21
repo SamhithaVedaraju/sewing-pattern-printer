@@ -32,6 +32,8 @@ button.chip.on{background:var(--acc);color:#fff;border-color:var(--acc)}
 .sheet{position:relative;background:#fff;overflow:hidden;page-break-after:always;break-after:page}
 #cropw{display:none;margin-top:10px}#cv{width:100%;touch-action:none;border-radius:10px;cursor:crosshair;display:block}
 .hs{font-size:15px;margin:14px 0 4px}.hs:first-child{margin-top:0}.steps{padding-left:22px;margin:0 0 8px}.steps li{margin-bottom:8px}
+.ai{border-left:3px solid var(--acc);background:var(--bg);border-radius:8px;padding:8px 12px;margin:4px 0 10px}.ai p{margin:4px 0}.ai ul{margin:4px 0;padding-left:20px}.ai .stat{margin:6px 0}.ai button{margin:2px 0 4px}
+#st.warn{color:var(--ink);background:var(--bg);border-left:3px solid var(--acc);border-radius:8px;padding:8px 12px}
 .lay{display:block;width:100%;height:auto;background:#fff;border:1px solid var(--line);border-radius:8px;margin:0 0 10px}
 .fig{display:block;width:100%;max-width:240px;height:auto;background:#fff;border:1px solid var(--line);border-radius:8px;margin:6px 0 2px}
 .ovl{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;justify-content:center;align-items:flex-start;padding:16px;z-index:50;overflow:auto}.ovl.on{display:flex}
@@ -243,13 +245,19 @@ function fabric(act,per,pcs){
  const fab=[...new Set(act.map(i=>items[i].type))].map(t=>`${t[0].toUpperCase()+t.slice(1)}: easiest in ${FAB[t][0]}; once you’re confident, try ${FAB[t][1]}.`);
  fab.push('Beginner tip: pick a stable woven fabric that doesn’t stretch or slip, with a small all-over print that hides wobbly stitches. Avoid knits, satin, chiffon and big checks or stripes for your first makes. Wash it before cutting.');
  return{w,sup,fab,txt:x=>x.pl.bad?`${x.cm} cm (${x.inch} in) wide: too narrow for the ${x.pl.bad}. Choose 150 cm fabric.`:`${x.cm} cm (${x.inch} in) wide: buy ${(x.pl.buy/100).toFixed(1)} m (${yd(x.pl.buy)})`}}
-const figH=f=>f?`<svg class="fig" viewBox="0 0 120 62" font-family="Arial,sans-serif">${FIG[f]}</svg>`:'';
+const figH=f=>f?`<svg class="fig" viewBox="0 0 120 ${f.s?70:62}" font-family="Arial,sans-serif">${f.s||FIG[f]}</svg>`:'';
+function aiBox(it,i,ai){const a=it.ai,busy=it.aiState=='busy',err=!busy&&it.aiState;let h='';
+ if(a&&(a.sum||a.det.length||a.tips.length))h+=`<b>From your photo</b>${a.sum?`<p>${esc(a.sum)}</p>`:''}${a.det.length?`<p>Details the basic pattern simplifies: ${esc(a.det.join(', '))}.</p>`:''}${a.tips.length?`<ul>${a.tips.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>`:''}`;
+ h+=`<p class="stat">${busy?'✍️ Claude is writing new instructions and diagrams for this garment. This can take a minute…':ai?'✨ These steps and diagrams were written by Claude for your photo.':err?'Couldn’t write new instructions: '+esc(err)+' Showing the standard steps for now.':it.aiSteps?'You changed the options, so these are the standard steps until you ask Claude again.':aiOK?'These are the standard steps.':'These are the standard steps. Photo-specific instructions from Claude need the Claude Artifact version.'}</p>`;
+ if(aiOK&&!busy)h+=`<button class="chip" data-ai="${i}">${ai?'Write new instructions':'Write instructions with Claude'}</button>`;
+ return`<div class="ai">${h}</div>`}
 function build(){
  if(!items.length){$('ov').innerHTML='<p class="stat">Scan a photo to see your pattern.</p>';$('how').innerHTML='<p class="stat">Step-by-step instructions for your pattern appear here.</p>';$('fab').innerHTML='<p class="stat">How much fabric to buy, a cutting layout and a supplies list appear here.</p>';$('thumbs').innerHTML='';$('info').textContent='';SV=[];return}
  const act=scope=='all'?items.map((_,i)=>i):[+scope],[PW,PH]=PAPERS[$('pp').value],pw=PW-2*mg,ph=PH-2*mg,sx=pw-ov,sy=ph-ov;
  $('pgst').textContent=`@page{size:${PW}mm ${PH}mm;margin:0}@media print{.th{width:${PW}mm;height:${PH}mm}}`;
- const per=act.map(i=>mk(items[i],lbl(i).toUpperCase())),pcs=per.flat(),hows=act.map((i,k)=>howTo(items[i],per[k].inf));
- $('how').innerHTML=act.map((i,k)=>`<h3 class="hs">${lbl(i)} · size ${items[i].size}</h3><ol class="steps">${hows[k].map(([t,f])=>`<li>${t}${figH(f)}</li>`).join('')}</ol>`).join('');
+ const per=act.map(i=>mk(items[i],lbl(i).toUpperCase())),pcs=per.flat(),useAI=it=>it.aiSteps&&it.aiSteps.sig==sig(it);
+ const hows=act.map((i,k)=>useAI(items[i])?items[i].aiSteps.steps.map(([t,s])=>[t,s?{s}:0]):howTo(items[i],per[k].inf));
+ $('how').innerHTML=act.map((i,k)=>`<h3 class="hs">${lbl(i)} · size ${items[i].size}</h3>${aiBox(items[i],i,useAI(items[i]))}<ol class="steps">${hows[k].map(([t,f])=>`<li>${esc(t)}${figH(f)}</li>`).join('')}</ol>`).join('');
  const maxW=Math.max(3*sx,...pcs.map(c=>c.w-c.x0+SA*2+40));let x=M,y=M+75,rh=0,Wd=0;
  pcs.forEach(c=>{const w=c.w-c.x0;if(x>M&&x+w+SA*2>maxW){x=M;y+=rh+SA*2+25;rh=0}c.ox=x-c.x0+(c.fold?0:SA);c.oy=y;x+=w+SA*2+25;rh=Math.max(rh,c.h);Wd=Math.max(Wd,x)});
  const L={pcs,W:Wd+M,H:y+rh+SA+M};
@@ -286,7 +294,10 @@ function build(){
   +`<rect x="${x0+5}" y="${y0+ph-ov-cs*rows-8}" width="${cs*cols+4}" height="${cs*rows+4}" fill="#fff"/><g transform="translate(${x0+7} ${y0+ph-ov-cs*rows-6})">${mapSvg(cols,rows,need,cs,[r,c])}</g><text x="${x0+pw-ov-3}" y="${y0+ph-ov-3}" font-size="9" font-weight="700" text-anchor="end" fill="#b5446e">${lb}</text></svg>`));labs.push('Sheet '+lb);
  }
  const hp=Pager(PW,PH,'How to sew it');
- act.forEach((i,k)=>{hp.room(hp.fs*10);hp.T(`${lbl(i)} · size ${items[i].size}`,1,1.3);hows[k].forEach(([t,f],j)=>{hp.T(`${j+1}. ${t}`);if(f)hp.F(FIG[f],120,62,Math.min(55,PW*.4));hp.ty+=hp.fs*.4});hp.ty+=hp.fs});
+ act.forEach((i,k)=>{const it=items[i],a=it.ai;hp.room(hp.fs*10);hp.T(`${lbl(i)} · size ${it.size}`,1,1.3);
+  if(a&&a.sum)hp.T('From your photo: '+a.sum);if(a&&a.det.length)hp.T('Details the basic pattern simplifies: '+a.det.join(', ')+'.');if(a)a.tips.forEach(t=>hp.T('• '+t));
+  if(useAI(it))hp.T('Steps and diagrams written by Claude for your photo.',1);hp.ty+=hp.fs*.4;
+  hows[k].forEach(([t,f],j)=>{hp.T(`${j+1}. ${t}`);if(f)hp.F(f.s||FIG[f],120,f.s?70:62,Math.min(55,PW*.4));hp.ty+=hp.fs*.4});hp.ty+=hp.fs});
  hp.end().forEach((v,j)=>{SV.push(W(v));labs.push('How to sew '+(j+1))});
  $('thumbs').innerHTML=SV.map((v,i)=>`<div class="th"><b>${labs[i]}</b>${v}</div>`).join('');
  $('info').textContent=`${Math.round(L.W/10)} × ${Math.round(L.H/10)} cm pattern · ${cnt} pattern sheets + ${SV.length-cnt} instruction sheets on ${$('pp').value}`;
@@ -372,25 +383,58 @@ function shapeItem(n,m,box,wy,hy){const f=prof(m,box,[wy,hy,.95]);if(f.hi<10||f.
  if(n.type=='dress'||n.type=='top')n.waist=Math.round(Math.min(1,Math.max(0,(1-wr)/.4))*100);
  if(n.type=='dress'||n.type=='skirt')n.flare=Math.round(Math.min(2.1,Math.max(1,he))*100);
  if(lg)n.flare=Math.round(Math.min(1.5,Math.max(.5,he))*100);return true}
-const PROMPT=`You are a sewing pattern assistant. The image shows an outfit. List every distinct garment that can be patterned, each as one of: dress, top, skirt, pants, shorts (shirts, tees, blouses, jackets and sweaters count as "top"; a jumpsuit is "top" plus "pants"). Return ONLY JSON: {"items":[{"type":"dress|top|skirt|pants|shorts","sleeves":"none|short|long","length":"dress/skirt: mini|knee|midi|maxi; top: crop|regular|tunic; pants: cropped|full; shorts: short|knee","fit":"fitted|regular|loose","neckline":"round|v|square|boat","box":[x0,y0,x1,y1],"waistY":number,"hipY":number,"flare":number,"waist":number}]}. box is that garment's tight bounding box as fractions 0-1 of image width and height (top of garment to hem). waistY and hipY are the fractions 0-1 of the garment's height (from its top) at the narrowest waist and widest hip. flare is 100-210: hem width / hip width x100 for dress or skirt; for pants or shorts the combined hem width of both legs / hip width x100 between 50 and 150. waist is 0-100: 0 for boxy and 100 for strongly fitted at the waist. Omit sleeves and neckline for skirt, pants and shorts.`;
+const PROMPT=`You are a sewing pattern assistant. The image shows an outfit. List every distinct garment that can be patterned, each as one of: dress, top, skirt, pants, shorts (shirts, tees, blouses, jackets and sweaters count as "top"; a jumpsuit is "top" plus "pants"). Return ONLY JSON: {"items":[{"type":"dress|top|skirt|pants|shorts","sleeves":"none|short|long","length":"dress/skirt: mini|knee|midi|maxi; top: crop|regular|tunic; pants: cropped|full; shorts: short|knee","fit":"fitted|regular|loose","neckline":"round|v|square|boat","box":[x0,y0,x1,y1],"waistY":number,"hipY":number,"flare":number,"waist":number,"summary":string,"details":[string],"tips":[string]}]}. box is that garment's tight bounding box as fractions 0-1 of image width and height (top of garment to hem). waistY and hipY are the fractions 0-1 of the garment's height (from its top) at the narrowest waist and widest hip. flare is 100-210: hem width / hip width x100 for dress or skirt; for pants or shorts the combined hem width of both legs / hip width x100 between 50 and 150. waist is 0-100: 0 for boxy and 100 for strongly fitted at the waist. Omit sleeves and neckline for skirt, pants and shorts. summary is one plain sentence describing this exact garment as seen (colour, fabric look, style). details lists up to 5 short visible features that a basic pattern of this type would leave out or simplify (for example ruffled hem, patch pockets, button front, collar, puff sleeves, tie belt, gathered waist, lace trim); use [] if there are none. tips is 2 to 5 short, friendly sewing tips for a beginner making THIS garment: how to recreate or simply skip each detail, a fabric that matches what you see, and anything to watch out for. Each tip is one or two sentences.`;
 const num=(v,a,b,d)=>+v>=a&&+v<=b?+v:d;
+const WHY={not_granted:'Claude wasn’t allowed to look at your photo. Reload the page and choose Allow when Claude asks.',rate_limited:'You’ve reached your Claude usage limit for now. Try again later.',images_unavailable:'This view can’t send photos to Claude.',sampling_disabled:'Claude isn’t available for this account.',session_expired:'Please sign in to Claude again.',image_rejected:'Claude couldn’t read that photo. Try a JPEG or PNG.',refused:'Claude declined this photo. Try another one.'};
+const why=e=>WHY[e&&e.code]||'Something went wrong ('+(e&&e.code||'error')+'). Try again.';
+let photo=null,aiOK=false;
 async function scan(whole){
  if(!src)return;const c=getCrop(whole),m=maskOf(c);let got=[],note='';
- st('Scanning your photo…');
- try{const sample=window.claude?await claude.use('sample'):null;
-  if(!sample)note='AI isn’t available in this view, so I used the outline of the garment only. ';
-  else{const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',.85)),r=await sample.json(PROMPT,{images:[blob],modelTier:'default'});
+ st('Scanning your photo… Claude usually takes 10–60 seconds.');
+ try{const sample=window.claude?await claude.use('sample'):null;aiOK=!!sample;
+  if(!sample)note='AI is off here (it only works in the Claude Artifact version), so I traced the outline only and assumed a dress. Use “Add a garment manually” to pick the right type. ';
+  else{const blob=photo=await new Promise(r=>c.toBlob(r,'image/jpeg',.85)),r=await sample.json(PROMPT,{images:[blob],modelTier:'default'});
    got=(r.items||[]).filter(x=>x&&O[x.type]).slice(0,5).map(x=>{const n=newItem(x.type),wp=x.type=='dress'||x.type=='top';
     if(O[x.type][x.length]!=null)n.length=x.length;if(E[x.fit])n.fit=x.fit;
     if(wp&&['none','short','long'].includes(x.sleeves))n.sleeves=x.sleeves;if(wp&&['round','v','square','boat'].includes(x.neckline))n.neck=x.neckline;
     const lg=x.type=='pants'||x.type=='shorts';n.flare=Math.round(num(x.flare,lg?50:100,lg?150:210,n.flare));n.waist=Math.round(num(x.waist,0,100,n.waist));
     const b=Array.isArray(x.box)&&x.box.length==4&&x.box[2]>x.box[0]&&x.box[3]>x.box[1]?x.box.map(Number):[0,0,1,1],ok=shapeItem(n,m,b,num(x.waistY,.1,.9,.42),num(x.hipY,.1,1,.6));
+    const ls=(a,k,c)=>(Array.isArray(a)?a:[]).filter(s=>typeof s=='string'&&s.trim()).slice(0,k).map(s=>s.trim().slice(0,c));
+    n.ai={sum:typeof x.summary=='string'?x.summary.trim().slice(0,240):'',det:ls(x.details,5,80),tips:ls(x.tips,5,320)};n.box=b;
     n.desc=`${n.type} · ${n.length}${wp&&n.sleeves!='none'?' · '+n.sleeves+' sleeves':''}${wp?' · '+n.neck+' neck':''} · ${ok?'shape traced from your photo':'shape estimated'}`;return n})}
- }catch(e){note='AI scan didn’t work ('+(e&&e.code||'error')+'), so I used the outline only. '}
- if(!got.length){const n=newItem('dress');n.desc='dress · shape traced from outline';shapeItem(n,m,[0,0,1,1],.42,.6);got=[n]}
- items=got;scope='all';renderItems();build();
- st(note+`Found: ${got.map((_,i)=>lbl(i)).join(' + ')}. Just pick your size${got.length>1?' for each and choose which patterns to print':''}.`)
+ }catch(e){note='The AI scan didn’t work: '+why(e)+' I traced the outline only and assumed a dress. '}
+ if(!got.length){const n=newItem('dress');n.desc='dress · shape traced from outline (not identified)';shapeItem(n,m,[0,0,1,1],.42,.6);got=[n]}
+ items=got;scope='all';renderItems();build();$('st').classList.toggle('warn',!!note);
+ st(note+`Found: ${got.map((_,i)=>lbl(i)+(got[i].ai&&got[i].ai.sum?' ('+got[i].ai.sum+')':'')).join(' + ')}. Pick your size${got.length>1?' for each and choose which patterns to print':''}.${note?'':' Claude is now writing your instructions.'}`);
+ if(!note)got.forEach(n=>aiSteps(n));
 }
+/* ---------- Claude-written instructions + diagrams (fresh on every request) ---------- */
+const sig=it=>[it.type,it.sleeves,it.neck,it.close,it.length,it.fit].join('|');
+const SVG_EL={g:1,path:1,rect:1,circle:1,ellipse:1,line:1,polyline:1,polygon:1,text:1,tspan:1},SVG_AT=/^(d|x|y|dx|dy|x1|y1|x2|y2|cx|cy|r|rx|ry|width|height|points|fill|stroke|stroke-width|stroke-dasharray|stroke-linecap|stroke-linejoin|opacity|fill-opacity|stroke-opacity|transform|font-size|font-weight|font-style|text-anchor|dominant-baseline)$/;
+/* AI-drawn SVG is untrusted: keep only plain shapes/text and presentation attributes */
+function cleanSvg(s){if(typeof s!='string'||!s.trim()||s.length>30000)return'';
+ const d=new DOMParser().parseFromString(`<svg xmlns="http://www.w3.org/2000/svg">${s.replace(/<\/?svg[^>]*>/gi,'')}</svg>`,'image/svg+xml'),root=d.documentElement;
+ if(root.localName!='svg'||d.getElementsByTagName('parsererror').length)return'';
+ const walk=el=>[...el.children].forEach(c=>{if(!SVG_EL[c.localName])return c.remove();[...c.attributes].forEach(a=>{if(!SVG_AT.test(a.name)||/url\(|script|expression/i.test(a.value))c.removeAttribute(a.name)});walk(c)});
+ walk(root);if(!root.children.length)return'';return new XMLSerializer().serializeToString(root).replace(/^<svg[^>]*>|<\/svg>$/g,'')}
+async function aiSteps(it){const sample=window.claude?await claude.use('sample'):null;if(!sample)return;
+ const wp=it.type=='dress'||it.type=='top',pcs=mk(it,it.type.toUpperCase()),f=pcs.inf,a=it.ai||{};
+ const notions=wp?(it.type=='dress'?`${f.zip} cm invisible zipper in the left side seam`:'button and loop at a back-neck slit')+(it.sleeves=='none'?', bias binding for the armholes':'')+', interfaced neck facings traced from the front and back pieces':it.close=='elastic'?`${f.elas} cm of 2.5 cm elastic in the waistband casing`:`${f.zip} cm invisible zipper in the left side seam, interfaced waistband, hook and eye`;
+ const P=`You are a patient sewing teacher. Write fresh, beginner-friendly, step-by-step instructions for sewing the garment below from a printed paper pattern.${photo?` The photo shows the original garment${it.box?` (it is inside the box ${it.box.map(v=>v.toFixed(2)).join(', ')} given as fractions of the image)`:''}; refer to what you see in it where that helps.`:''}
+Garment: ${a.sum||it.type}. Type ${it.type}, length ${it.length}, fit ${it.fit}${wp?`, sleeves ${it.sleeves}, ${it.neck} neckline`:`, ${it.close} waist`}, size ${it.size}.
+Pattern pieces the person has (1.5 cm seam allowance and 1.5 cm hem allowance are already included on every edge): ${pcs.map(c=>c.n.toLowerCase()+' ('+c.note+')').join('; ')}.
+Closure and notions: ${notions}.
+Details seen in the photo that the basic pattern leaves out: ${a.det&&a.det.length?a.det.join(', '):'none noted'}.
+Rules: 10 to 16 steps in order, from preparing the fabric to the final press. Plain, friendly words for a first-time sewist. Use only the pieces listed; for any extra detail from the photo, say how to add it simply or that it can be skipped. All measurements in cm.
+For about half of the steps (the ones where a picture helps most) add a simple diagram drawn specially for that step, as SVG markup: only the inner elements of an <svg viewBox="0 0 120 70">, using path, rect, circle, ellipse, line, polyline, polygon, text and g. No <svg> tag, scripts, images, CSS, or links. Fabric right side: fill #f4c6d6, stroke #b5446e. Wrong side: fill #f7f7f7, stroke #666. Stitching: stroke #b5446e with stroke-dasharray "3 2". Labels: text with font-size 5 or 6 and fill #222, kept inside the 120 x 70 area. Keep each diagram clear and simple.
+Return ONLY JSON: {"steps":[{"text":"step text","svg":"diagram markup or empty string"}]}`;
+ it.aiState='busy';build();
+ try{const r=await sample.json(P,{...(photo?{images:[photo]}:{}),cache:false,modelTier:'default'});
+  const s=(r&&Array.isArray(r.steps)?r.steps:[]).filter(x=>x&&typeof x.text=='string'&&x.text.trim()).slice(0,20).map(x=>[x.text.trim().slice(0,800),cleanSvg(x.svg)]);
+  if(s.length<4)throw{code:'empty_completion'};it.aiSteps={sig:sig(it),steps:s};it.aiState=''}
+ catch(e){it.aiState=why(e)}
+ if(items.includes(it))build()}
+$('how').addEventListener('click',e=>{const b=e.target.closest('[data-ai]');if(b&&items[+b.dataset.ai])aiSteps(items[+b.dataset.ai])});
 $('scan').onclick=()=>scan(false);$('full').onclick=()=>scan(true);
 items=[];renderItems();build();
 </script></div></body></html>
