@@ -32,6 +32,7 @@ button.chip.on{background:var(--acc);color:#fff;border-color:var(--acc)}
 .sheet{position:relative;background:#fff;overflow:hidden;page-break-after:always;break-after:page}
 #cropw{display:none;margin-top:10px}#cv{width:100%;touch-action:none;border-radius:10px;cursor:crosshair;display:block}
 .hs{font-size:15px;margin:14px 0 4px}.hs:first-child{margin-top:0}.steps{padding-left:22px;margin:0 0 8px}.steps li{margin-bottom:8px}
+.lay{display:block;width:100%;height:auto;background:#fff;border:1px solid var(--line);border-radius:8px;margin:0 0 10px}
 .fig{display:block;width:100%;max-width:240px;height:auto;background:#fff;border:1px solid var(--line);border-radius:8px;margin:6px 0 2px}
 .ovl{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;justify-content:center;align-items:flex-start;padding:16px;z-index:50;overflow:auto}.ovl.on{display:flex}
 .pan{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;max-width:560px;width:100%;position:relative;margin:auto 0}
@@ -53,6 +54,7 @@ button.x{position:absolute;right:10px;top:10px;padding:4px 10px;background:var(-
 </div><div>
 <div class="card noprint"><h2>Full pattern preview</h2><label style="margin:0 0 8px"><input type="checkbox" id="gr" style="width:auto"> Show how it splits into sheets</label><div class="ov" id="ov"></div><p class="stat" id="info"></p></div>
 <div class="card noprint"><h2>How to sew it</h2><div id="how"></div></div>
+<div class="card noprint"><h2>Fabric &amp; supplies</h2><div id="fab"></div></div>
 <div class="card"><div class="noprint"><h2>Download sheets</h2><label>Paper size</label><select id="pp"></select><div class="row" style="margin:12px 0"><button id="dl">Download PDF</button><button id="pr">Print</button></div><p class="stat" id="dls">Print at 100% / Actual size. Sheet 1 has the instructions, the last pages show how to sew it, and every sheet has a 5×5 cm scale check.</p></div><div id="thumbs"></div></div>
 </div></div>
 <div class="ovl noprint" id="mp"><div class="pan" role="dialog" aria-modal="true" aria-labelledby="mph"><button class="x" id="mpx" aria-label="Close">✕</button>
@@ -206,9 +208,40 @@ function howTo(it,inf){
  P(`Try it on. Hem the ${t=='pants'||t=='shorts'?'legs':t}: press 0.5 cm, then another 1 cm, to the wrong side and stitch close to the inner fold.${(t=='dress'||t=='skirt')&&it.flare>150?' Let a flared skirt hang overnight before you hem it, so the fabric can settle.':''}`,'hem');
  P('Give everything a final press. Well done, you made it!');
  return S}
+/* ---------- fabric, cutting layout, supplies ---------- */
+/* pack pieces on fabric folded lengthwise: x = across from the fold (mm), y = down the length; grain stays along y */
+const cutPlan=(pcs,fwCm)=>{const a=pack(pcs,fwCm,0),b=pack(pcs,fwCm,1);return a.bad||b.len<a.len?b:a};
+function pack(pcs,fwCm,rot){
+ const FW=(fwCm/2-1)*10,g=10,R=[],P=[];
+ pcs.forEach(c=>{const rt=c.cut=='b'&&(rot||c.w/2+SA>FW),b=c.cut=='b'&&!rt,f=c.fold||b,w=rt?c.h+2*SA:b?c.w/2+SA:c.fold?c.w+SA:c.w-c.x0+2*SA;for(let k=c.cut=='f2'?2:1;k--;)R.push({c,w,h:(rt?c.w:c.h)+2*SA,f,b,rt})});
+ R.sort((a,b)=>b.f-a.f||b.h-a.h);
+ for(const r of R){if(r.w>FW)return{bad:r.c.n};let bt=null;
+  const xs=r.f?[0]:[0,...P.map(p=>p.x+p.w+g)],ys=[0,...P.map(p=>p.y+p.h+g)];
+  for(const y of ys)for(const x of xs)if(x+r.w<=FW&&!P.some(p=>x<p.x+p.w&&x+r.w>p.x&&y<p.y+p.h&&y+r.h>p.y)&&(!bt||y<bt.y||y==bt.y&&x<bt.x))bt={x,y};
+  P.push({...r,...bt})}
+ const len=Math.max(...P.map(p=>p.y+p.h))/10;return{P,FW,len,buy:Math.ceil(len*1.1/10)*10}}
+function planSvg(pl,u){const{P,FW}=pl,Lm=pl.len*10;
+ let s=`<g transform="translate(10 40)"><clipPath id="${u}"><rect width="${Lm}" height="${FW}"/></clipPath><rect width="${Lm}" height="${FW}" fill="#fdf3f6" stroke="#b5446e" stroke-width="2"/><g clip-path="url(#${u})"><g transform="translate(0 ${FW}) rotate(-90)">`;
+ P.forEach(p=>{const d=p.rt?`M0 0H${p.c.h}V${p.c.w}H0Z`:p.b?`M0 0H${p.c.w/2}V80H0Z`:p.c.d;s+=`<g transform="translate(${p.f?p.x:p.x-p.c.x0+SA} ${p.y+SA})"><path d="${d}" fill="#eab3c6" stroke="#eab3c6" stroke-width="${2*SA}" stroke-linejoin="round"/><path d="${d}" fill="#f4c6d6" stroke="#b5446e" stroke-width="2"/></g>`});
+ s+='</g></g>';
+ P.forEach(p=>{const fz=Math.max(FW/20,Math.min(36,p.h/9,p.w/6)),hw=p.c.n.length*fz*.32,cx=Math.max(hw,Math.min(Lm-hw,p.y+p.h/2)),cy=FW-p.x-p.w/2;s+=`<text x="${cx}" y="${cy}" font-size="${fz}" text-anchor="middle" fill="#222">${p.c.n}</text><text x="${cx}" y="${cy+fz*1.2}" font-size="${fz*.8}" text-anchor="middle" fill="#555">${p.rt?'along the selvedge':p.b?'fold pattern in half':p.c.cut=='p'?'cuts a pair':'on fold'}</text>`});
+ s+=`<line x1="0" y1="${FW}" x2="${Lm}" y2="${FW}" stroke="#222" stroke-width="5"/><text x="${Lm/2}" y="${FW+32}" font-size="${FW/18}" text-anchor="middle" fill="#222">FOLD</text><text x="${Lm/2}" y="-10" font-size="${FW/18}" text-anchor="middle" fill="#222">SELVEDGES (both layers)</text></g>`;
+ return{s,vw:Lm+20,vh:FW+80}}
+const yd=cm=>{const e=Math.ceil(cm/91.44*8),w=Math.floor(e/8),f=['','⅛','¼','⅜','½','⅝','¾','⅞'][e%8];return(w||!f?w:'')+f+' yd'};
+const FAB={dress:['cotton poplin, chambray, linen-cotton blend','viscose challis, crepe'],top:['cotton lawn, poplin, double gauze','viscose, crepe de chine'],skirt:['cotton twill, lightweight denim, linen','corduroy, wool suiting'],pants:['cotton twill, linen','denim, wool suiting'],shorts:['cotton twill, chambray, linen','denim, seersucker']};
+function fabric(act,per,pcs){
+ const w=[[110,45],[150,60]].map(([cm,inch])=>({cm,inch,pl:cutPlan(pcs,cm)})),sup=[`All-purpose polyester thread in a matching colour: ${act.length>1?act.length+' spools':'1 spool'}`];
+ act.forEach((i,k)=>{const it=items[i],t=it.type,f=per[k].inf,n=lbl(i)+': ';
+  if(t=='dress'||t=='top'){sup.push(n+'lightweight fusible interfacing, 0.3 m, for the neck facings',n+(t=='dress'?`invisible zipper, ${f.zip} cm`:'1 small button for the back neck opening'));if(it.sleeves=='none')sup.push(n+`${f.bias} m of 12 mm single-fold bias binding for the armholes`)}
+  else if(it.close=='elastic')sup.push(n+`${f.elas} cm of 2.5 cm wide elastic (your ${meas(it).W} cm waist, minus 5 cm for a snug fit, plus 2.5 cm overlap)`);
+  else sup.push(n+`invisible zipper, ${f.zip} cm`,n+`fusible interfacing strip, ${Math.ceil(f.band/10)} × 4 cm, for the waistband`,n+'1 hook and eye for the waistband')});
+ sup.push('Tools: pins, fabric scissors, paper scissors, tape, tape measure, iron, chalk or a washable marker'+(act.some(i=>items[i].close=='elastic'&&items[i].type!='dress'&&items[i].type!='top')?', a safety pin':''));
+ const fab=[...new Set(act.map(i=>items[i].type))].map(t=>`${t[0].toUpperCase()+t.slice(1)}: easiest in ${FAB[t][0]}; once you’re confident, try ${FAB[t][1]}.`);
+ fab.push('Beginner tip: pick a stable woven fabric that doesn’t stretch or slip, with a small all-over print that hides wobbly stitches. Avoid knits, satin, chiffon and big checks or stripes for your first makes. Wash it before cutting.');
+ return{w,sup,fab,txt:x=>x.pl.bad?`${x.cm} cm (${x.inch} in) wide: too narrow for the ${x.pl.bad}. Choose 150 cm fabric.`:`${x.cm} cm (${x.inch} in) wide: buy ${(x.pl.buy/100).toFixed(1)} m (${yd(x.pl.buy)})`}}
 const figH=f=>f?`<svg class="fig" viewBox="0 0 120 62" font-family="Arial,sans-serif">${FIG[f]}</svg>`:'';
 function build(){
- if(!items.length){$('ov').innerHTML='<p class="stat">Scan a photo to see your pattern.</p>';$('how').innerHTML='<p class="stat">Step-by-step instructions for your pattern appear here.</p>';$('thumbs').innerHTML='';$('info').textContent='';SV=[];return}
+ if(!items.length){$('ov').innerHTML='<p class="stat">Scan a photo to see your pattern.</p>';$('how').innerHTML='<p class="stat">Step-by-step instructions for your pattern appear here.</p>';$('fab').innerHTML='<p class="stat">How much fabric to buy, a cutting layout and a supplies list appear here.</p>';$('thumbs').innerHTML='';$('info').textContent='';SV=[];return}
  const act=scope=='all'?items.map((_,i)=>i):[+scope],[PW,PH]=PAPERS[$('pp').value],pw=PW-2*mg,ph=PH-2*mg,sx=pw-ov,sy=ph-ov;
  $('pgst').textContent=`@page{size:${PW}mm ${PH}mm;margin:0}@media print{.th{width:${PW}mm;height:${PH}mm}}`;
  const per=act.map(i=>mk(items[i],lbl(i).toUpperCase())),pcs=per.flat(),hows=act.map((i,k)=>howTo(items[i],per[k].inf));
@@ -223,13 +256,22 @@ function build(){
  let grid='';for(let r=0;r<rows;r++)for(let c=0;c<cols;c++)grid+=need[r][c]?`<rect x="${c*sx}" y="${r*sy}" width="${pw}" height="${ph}" fill="none" stroke="#b5446e" stroke-width="1.5" stroke-dasharray="8 5"/><text x="${c*sx+pw/2}" y="${r*sy+ph/2}" font-size="${Math.min(pw,ph)/5}" text-anchor="middle" fill="#b5446e" opacity=".25">${r+1}${col(c)}</text>`:'';
  $('ov').innerHTML=`<svg viewBox="0 0 ${L.W} ${L.H}" style="width:100%;display:block;background:#fff;border-radius:8px">${content('o',L,title)}${$('gr').checked?grid:''}</svg>`;
  const W=i=>`<svg xmlns="http://www.w3.org/2000/svg" width="${PW}mm" height="${PH}mm" viewBox="0 0 ${PW} ${PH}" font-family="Arial,sans-serif"><rect width="${PW}" height="${PH}" fill="#fff"/>${i}</svg>`;
- const fs=Math.max(2.4,Math.min(4,PW/52)),nc=Math.floor((PW-2*mg-12)/(fs*.52));let ty=mg+fs*3,ins=`<text x="${mg+6}" y="${ty}" font-size="${fs*2}" font-family="Georgia,serif" font-weight="700" fill="#000">Start here</text>`;ty+=fs*3;
- const T=(t,b)=>wrapT(t,nc).forEach(l=>{ins+=`<text x="${mg+6}" y="${ty}" font-size="${fs}" ${b?'font-weight="700"':''} fill="#000">${l}</text>`;ty+=fs*1.5});
- T(`${title} · ${$('pp').value} · ${cnt} pattern sheets in a ${cols} × ${rows} grid (empty squares need no printing)`,1);ty+=fs;
+ const sp=Pager(PW,PH,'Start here'),T=sp.T,fs=sp.fs;
+ T(`${title} · ${$('pp').value} · ${cnt} pattern sheets in a ${cols} × ${rows} grid (empty squares need no printing)`,1);sp.ty+=fs;
  ['1. Measure the 5 × 5 cm square on sheet 1. If it is not 5 cm, reprint at 100% / Actual size.','2. On every sheet cut off the LEFT and TOP margins along the solid scissor line. Keep the shaded tabs on the right and bottom.','3. Start at the top-left sheet. Lay the next sheet’s trimmed edge over the shaded tab, match the pattern lines, and tape.','4. Join each row, then join the rows. Use the map below and the labels (1A, 1B…).','5. Cut along the solid outer line, sew on the dashed line (1.5 cm seam allowance). Follow the fold and grainline marks.'].forEach(t=>T(t));
- ty+=fs;T('Pieces',1);pcs.forEach(c=>T('• '+c.n+' — '+c.note));
- const cm=Math.max(2,Math.min(10,(PW-2*mg-12)/cols,(PH-ty-mg-8)/rows));ins+=`<g transform="translate(${mg+6} ${ty+fs})">${mapSvg(cols,rows,need,cm,null,1)}</g>`;
- SV=[W(ins)];const labs=['Start here'];
+ sp.ty+=fs;T('Pieces',1);pcs.forEach(c=>T('• '+c.n+' — '+c.note));
+ if((PH-sp.ty-mg-8)/rows<2)sp.np();
+ const cm=Math.max(2,Math.min(10,(PW-2*mg-12)/cols,(PH-sp.ty-mg-8)/rows));sp.s+=`<g transform="translate(${mg+6} ${sp.ty+fs})">${mapSvg(cols,rows,need,cm,null,1)}</g>`;sp.ty+=fs*3.5+cm*rows;
+ const fb=fabric(act,per,pcs);
+ const gs=fb.w.map(x=>{if(x.pl.bad)return null;const g=planSvg(x.pl,'p'+x.cm);g.w=Math.min(PW-2*mg-16,70*g.vw/g.vh);g.h=g.w*g.vh/g.vw;return g});
+ sp.room(fs*9+(gs[0]?gs[0].h:0));T('Fabric to buy',1,1.3);T('For fabric folded in half lengthwise. Includes about 10% extra, rounded up to the next 10 cm.');
+ fb.w.forEach((x,j)=>{const g=gs[j];if(!g)return T(fb.txt(x),1);sp.room(fs*2+g.h);T(fb.txt(x),1);sp.F(g.s,g.vw,g.vh,g.w)});
+ sp.ty+=fs*.5;sp.room(fs*6);T('Supplies',1,1.3);fb.sup.forEach(l=>T('• '+l));
+ sp.ty+=fs*.5;sp.room(fs*6);T('Good fabrics',1,1.3);fb.fab.forEach(l=>T('• '+l));
+ const sh=sp.end();SV=sh.map(W);const labs=sh.map((_,j)=>j?'Start here '+(j+1):'Start here');
+ $('fab').innerHTML=`<h3 class="hs">Fabric to buy</h3><p class="stat" style="margin:0 0 6px">For fabric folded in half lengthwise, with every grainline parallel to the selvedge. Includes about 10% extra, rounded up to the next 10 cm.</p>`
+  +fb.w.map(x=>{if(x.pl.bad)return`<p><b>${fb.txt(x)}</b></p>`;const g=planSvg(x.pl,'h'+x.cm);return`<p style="margin:8px 0 4px"><b>${fb.txt(x)}</b></p><svg class="lay" viewBox="0 0 ${g.vw} ${g.vh}" font-family="Arial,sans-serif" role="img" aria-label="Cutting layout on ${x.cm} cm fabric">${g.s}</svg>`}).join('')
+  +`<h3 class="hs">Supplies</h3><ul class="tips">${fb.sup.map(l=>`<li>${l}</li>`).join('')}</ul><h3 class="hs">Good fabrics</h3><ul class="tips">${fb.fab.map(l=>`<li>${l}</li>`).join('')}</ul>`;
  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){if(!need[r][c])continue;
   const x0=c*sx,y0=r*sy,lb=`${r+1}${col(c)}`,cs=Math.min(4,30/Math.max(cols,rows)),tab='fill="#b5446e" fill-opacity=".1" stroke="#b5446e" stroke-width=".3" stroke-dasharray="2 1.5"';
   SV.push(W(`<svg x="${mg}" y="${mg}" width="${pw}" height="${ph}" viewBox="${x0} ${y0} ${pw} ${ph}">${content('s'+r+'_'+c,L,title)}`
