@@ -20,7 +20,7 @@ Turn a photo of a garment into a **print-at-home sewing pattern**, with step-by-
 4. **Pick a size.** XS–XL, or your own bust, waist, hip and height. "Find my size" recommends a size and grades between sizes when your measurements differ.
 5. **Get the pattern:**
    - **Pattern** tab: the full-size layout, optionally split into sheets.
-   - **How to sew** tab: Claude writes brand-new steps and diagrams for every photo. "Write new instructions" asks for a fresh set at any time. Standard steps are used when AI isn't available.
+   - **How to sew** tab: your photo beside a sketch of the finished garment, then numbered steps. Every step diagram is drawn live from this garment's own pattern pieces (its neckline, sleeves, flare and length), with the seam being sewn highlighted, and the dress or skirt zipper gap marked in the side seam. Claude writes brand-new steps for every photo and picks which diagram fits each step; "Write new instructions" asks for a fresh set. Standard steps are used when AI isn't available.
    - **Fabric & supplies** tab: the real pieces laid out on folded 110 cm and 150 cm fabric, the amount to buy, a supplies list and fabric suggestions.
    - **Print & download** tab: a PDF for any of 14 paper sizes, with a "Start here" page, tiled pattern sheets and the sewing steps.
 
@@ -28,7 +28,7 @@ Sewing words such as seam allowance, selvedge and facing are underlined everywhe
 
 ### About the AI
 
-Garment recognition and photo-specific instructions use Claude, so they work when the site runs as a Claude Artifact. **Claude's detail** in the studio chooses between Best (Claude's most capable model, which knows garments and dressmaking in the most depth; slower) and Faster. On GitHub Pages and other hosts the AI is off: the studio traces the outline, assumes a dress (change it under "Change the style") and shows the standard steps, and it says so clearly.
+Garment recognition and photo-specific instructions use Claude, so they work when the site runs as a Claude Artifact. **Claude's detail** in the studio chooses between Best (Claude's most capable model, which knows garments and dressmaking in the most depth; slower) and Faster. On GitHub Pages and other hosts the AI is off: the studio guesses the garment from the photo's outline (two legs mean trousers or shorts, a tall outline a dress, a widening one a skirt), opens the style options so you can correct it, and shows the standard steps. It says so clearly.
 
 The printed pattern pieces are always drafted by the app's own geometry, never by AI, so they stay accurate to the millimetre. Diagrams drawn by Claude are sanitized to plain shapes and text before they're shown.
 
@@ -62,6 +62,7 @@ js/
   pattern/geometry.js   drafting: bodice, sleeve, skirt, legs, waistband
   pattern/sheets.js     full-size layout, sheet tiling, print pages
   sewing/instructions.js  standard steps and the five technique diagrams
+  sewing/diagrams.js    step diagrams and the finished-garment sketch, drawn from the real pieces
   sewing/fabric.js      cutting layout, fabric amounts, supplies
   sewing/glossary.js    definitions and tappable terms
   sizing/measure.js     measuring guide and size recommendation

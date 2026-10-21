@@ -107,6 +107,51 @@ export function maskOf(canvas) {
   return { mask, w, h };
 }
 
+/**
+ * Best guess at the garment type from its outline alone, for when Claude isn't available:
+ * two separate shapes at the bottom are legs (long = pants, short = shorts); otherwise a tall
+ * outline is a dress, one that widens a lot towards the hem is a skirt, and the rest are tops.
+ */
+export function guessGarment(m) {
+  const { mask, w, h } = m;
+  let top = -1, bottom = -1, left = w, right = -1;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (!mask[y * w + x]) continue;
+      if (top < 0) top = y;
+      bottom = y;
+      if (x < left) left = x;
+      if (x > right) right = x;
+    }
+  }
+  if (top < 0) return 'dress';
+  const H = bottom - top + 1, W = right - left + 1;
+  // Solid runs of garment along one row, ignoring specks.
+  const runs = (y) => {
+    const out = [];
+    let start = -1;
+    for (let x = left; x <= right + 1; x++) {
+      const on = x <= right && mask[y * w + x];
+      if (on && start < 0) start = x;
+      if (!on && start >= 0) { if (x - start >= W * 0.06) out.push([start, x]); start = -1; }
+    }
+    return out;
+  };
+  const twoLegs = (y) => { const r = runs(y); return r.length >= 2 && r[1][0] - r[0][1] >= W * 0.04; };
+  let legRows = 0, rows = 0;
+  for (let y = Math.round(top + H * 0.8); y <= bottom; y++) { rows++; if (twoLegs(y)) legRows++; }
+  if (rows && legRows / rows > 0.6) {
+    let y = bottom;
+    while (y > top && twoLegs(y)) y--;
+    // The legs only read as separate a little below the crotch, so 40% of the height is already long.
+    return (bottom - y) / H > 0.4 ? 'pants' : 'shorts';
+  }
+  const widthAt = (q) => { const r = runs(Math.round(top + q * (H - 1))); return r.length ? r[r.length - 1][1] - r[0][0] : 0; };
+  if (H / W > 1.45) return 'dress';
+  if (widthAt(0.9) > widthAt(0.1) * 1.2) return 'skirt';
+  return 'top';
+}
+
 /** Garment width at three heights (fractions of the box): waist, hip, hem. */
 function widths(m, box, at) {
   const X0 = Math.floor(box[0] * m.w), X1 = Math.ceil(box[2] * m.w);

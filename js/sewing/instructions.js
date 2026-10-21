@@ -1,6 +1,7 @@
 // Standard sewing steps, used when Claude isn't available, and the five built-in diagrams.
 
 import { isBodice } from '../core/constants.js';
+import { DIAGRAMS } from './diagrams.js';
 
 /** Small technique diagrams, drawn in a 120 × 62 box. */
 export const FIGURES = {
@@ -27,13 +28,20 @@ export const FIGURES = {
 };
 
 /**
- * A step's diagram: a built-in figure key, or { svg } drawn by Claude (120 × 70).
- * Returns [inner markup, viewBox height] or null.
+ * A step's picture as { svg, vw, vh }, or null.
+ * `fig` is a technique key (FIGURES), a garment diagram key (drawn from this garment's
+ * own pieces), or { svg } drawn by Claude in a 120 × 70 box.
+ * @param ctx { pieces, item } for garment diagrams
  */
-export function figureOf(fig) {
+export function figureOf(fig, ctx) {
   if (!fig) return null;
-  if (typeof fig === 'string') return [FIGURES[fig].svg, 62];
-  return [fig.svg, 70];
+  if (typeof fig === 'string') {
+    if (FIGURES[fig]) return { svg: FIGURES[fig].svg, vw: 120, vh: 62 };
+    const draw = DIAGRAMS[fig];
+    if (!draw || !ctx) return null;
+    try { return draw(ctx); } catch { return null; }
+  }
+  return fig.svg ? { svg: fig.svg, vw: 120, vh: 70 } : null;
 }
 
 const NECK_NAMES = { round: 'round neckline', v: 'V neckline', square: 'square neckline', boat: 'boat neckline' };
@@ -52,53 +60,53 @@ export function standardSteps(item, info) {
   const step = (text, fig = null) => steps.push([text, fig]);
 
   step('Wash, dry and iron your fabric before cutting, so the finished garment won’t shrink later.');
-  step('Fold the fabric in half lengthwise, right sides together, with the selvedges lined up. Lay each pattern piece with its grainline arrow parallel to the selvedge and any edge marked FOLD exactly on the fold. Pin and cut along the solid line.');
+  step('Fold the fabric in half lengthwise, right sides together, with the selvedges lined up. Lay each pattern piece with its grainline arrow parallel to the selvedge and any edge marked FOLD exactly on the fold. Pin and cut along the solid line.', 'cut');
   step('Practise on a scrap first. Every seam is sewn 1.5 cm from the cut edge: this is the seam allowance, and it is already included in the pattern.', 'seam');
 
   if (bodice) {
-    step('Make the neck facings: lay the front pattern on paper, trace the neckline and the first 5 cm of the shoulder, then draw a line 6 cm below the neckline, following its curve. Repeat for the back. Cut each facing once on the fold from fabric and once from fusible interfacing, and iron the interfacing to the wrong side.');
-    step('Sew the shoulder seams: lay the front and back right sides together, line up the shoulders, pin and sew.', 'rst');
+    step('Make the neck facings: lay the front pattern on paper, trace the neckline and the first 5 cm of the shoulder, then draw a line 6 cm below the neckline, following its curve. Repeat for the back. Cut each facing once on the fold from fabric and once from fusible interfacing, and iron the interfacing to the wrong side.', 'facing');
+    step('Sew the shoulder seams: lay the front and back right sides together, line up the shoulders, pin and sew.', 'shoulders');
     step('Finish the raw edges of each seam with a zigzag stitch (or pinking shears), then press the seam open. Do this after every seam from now on.', 'press');
     step('Sew the facing shoulder seams the same way and press them open. Zigzag the outer edge of the facing.');
     if (t === 'top') step('Make room for your head: on the back neckline, draw a 10 cm line straight down from the centre back (the fold line). You will open it up in the next step.');
     step(`Pin the facing to the neckline, right sides together, with the shoulder seams matching. Sew around the ${NECK_NAMES[item.neck]}${t === 'top' ? ', then down both sides of the 10 cm line, 5 mm away from it, meeting in a point. Cut along the line almost to the point' : ''}.`);
-    step(`Trim the seam allowance to about 6 mm and clip into the curve every 1–2 cm${item.neck === 'v' ? ', snipping right into the V point' : item.neck === 'square' ? ', snipping diagonally into each corner' : ''}. Don’t cut through the stitches.`, 'clip');
+    step(`Trim the seam allowance to about 6 mm and clip into the curve every 1–2 cm${item.neck === 'v' ? ', snipping right into the V point' : item.neck === 'square' ? ', snipping diagonally into each corner' : ''}. Don’t cut through the stitches.`, 'neckline');
     step('Turn the facing to the inside and press. Stitch through the facing and the seam allowances 3 mm from the seam (understitching) so the facing stays inside, then tack it to the shoulder seams by hand.');
-    if (sleeves) step('Set in each sleeve while the side seams are still open: pin the sleeve cap to the armhole, right sides together, with the top of the cap at the shoulder seam. The cap is a little longer than the armhole; this ease gives you room to move. Spread it evenly with plenty of pins and sew with the sleeve on top.');
+    if (sleeves) step('Set in each sleeve while the side seams are still open: pin the sleeve cap to the armhole, right sides together, with the top of the cap at the shoulder seam. The cap is a little longer than the armhole; this ease gives you room to move. Spread it evenly with plenty of pins and sew with the sleeve on top.', 'sleeve');
     const sleeveRun = sleeves ? ' and sleeve seam in one go, from the sleeve hem to the garment hem' : '';
     if (t === 'dress') {
-      step(`Sew the right side seam${sleeveRun}, right sides together. On the left side, leave a ${z} cm opening for the zipper starting 3 cm below the armhole, and sew the seam above and below it.`, 'rst');
+      step(`Sew the right side seam${sleeveRun}, right sides together. On the left side, leave a ${z} cm opening for the zipper starting 3 cm below the armhole, and sew the seam above and below it.`, 'sides');
       step(`Insert the ${z} cm invisible zipper in the left side opening, following the instructions on the zipper packet (a zipper foot helps).`);
     } else {
-      step(`Sew the side seams${sleeves ? ' and sleeve seams in one go, from the sleeve hem to the garment hem' : ''}, right sides together.`, 'rst');
+      step(`Sew the side seams${sleeves ? ' and sleeve seams in one go, from the sleeve hem to the garment hem' : ''}, right sides together.`, 'sides');
     }
-    if (!sleeves) step('Finish the armholes with bias binding: unfold one edge of the binding, pin it to the armhole right sides together and sew along its fold line. Trim and clip the curve, turn the binding to the inside, press and stitch it down.');
-    else step('Hem the sleeves: press 0.5 cm, then another 1 cm, to the wrong side and stitch close to the inner fold.', 'hem');
+    if (!sleeves) step('Finish the armholes with bias binding: unfold one edge of the binding, pin it to the armhole right sides together and sew along its fold line. Trim and clip the curve, turn the binding to the inside, press and stitch it down.', 'armhole');
+    else step('Hem the sleeves: press 0.5 cm, then another 1 cm, to the wrong side and stitch close to the inner fold.', 'sleevehem');
     if (t === 'top') step('Sew a small button at the top of the back opening and a thread loop on the other side.');
   } else {
     if (!elastic) step('Iron fusible interfacing to the wrong side of one long half of the waistband.');
     if (t !== 'skirt') {
-      step(`Make each leg: lay a front and a back right sides together. Sew the inside leg seam (the short seam from the crotch to the hem), then the outside side seam${elastic ? '' : `. On the left leg, leave the top ${z} cm of the side seam open for the zipper`}.`, 'rst');
+      step(`Make each leg: lay a front and a back right sides together. Sew the inside leg seam (the short seam from the crotch to the hem), then the outside side seam${elastic ? '' : `. On the left leg, leave the top ${z} cm of the side seam open for the zipper`}.`, 'legs');
       step('Finish the raw edges with a zigzag stitch (or pinking shears) and press the seams open.', 'press');
-      step('Turn one leg right side out and slip it inside the other, so they are right sides together. Match the inside leg seams and pin the curved crotch seam from the front waist to the back waist. Sew it, then sew again over the curve for strength.');
+      step('Turn one leg right side out and slip it inside the other, so they are right sides together. Match the inside leg seams and pin the curved crotch seam from the front waist to the back waist. Sew it, then sew again over the curve for strength.', 'crotch');
       step(`Clip the curve of the crotch seam so it lies flat, then turn the ${t} right side out.`, 'clip');
     } else {
       step(elastic
         ? 'Lay the two skirt panels right sides together and sew both side seams.'
-        : `Lay the two skirt panels right sides together. Sew the right side seam, and the left side seam from ${z} cm below the waist down to the hem.`, 'rst');
+        : `Lay the two skirt panels right sides together. Sew the right side seam, and the left side seam from ${z} cm below the waist down to the hem.`, 'sides');
       step('Finish the raw edges with a zigzag stitch (or pinking shears) and press the seams open.', 'press');
     }
     if (elastic) {
       step('Sew the short ends of the waistband right sides together to make a loop. Fold it in half lengthwise, wrong sides together, and press.');
-      step(`Pin the waistband’s raw edges to the waist, right sides together, matching the band seam to a side seam. Sew all round, leaving a 5 cm gap. Thread ${info.elastic} cm of 2.5 cm elastic through the gap with a safety pin, overlap the ends by 2.5 cm and zigzag them together, then sew the gap closed. Spread the gathers evenly.`);
+      step(`Pin the waistband’s raw edges to the waist, right sides together, matching the band seam to a side seam. Sew all round, leaving a 5 cm gap. Thread ${info.elastic} cm of 2.5 cm elastic through the gap with a safety pin, overlap the ends by 2.5 cm and zigzag them together, then sew the gap closed. Spread the gathers evenly.`, 'waistband');
     } else {
       step(`Insert the ${z} cm invisible zipper in the opening at the top of the left side seam, following the instructions on the zipper packet (a zipper foot helps).`);
-      step('Press the waistband in half lengthwise, wrong sides together, then open it out. Pin the interfaced long edge to the waist, right sides together, with 1.5 cm extending at the front end of the zipper and 3 cm at the back end for an overlap. Sew.');
+      step('Press the waistband in half lengthwise, wrong sides together, then open it out. Pin the interfaced long edge to the waist, right sides together, with 1.5 cm extending at the front end of the zipper and 3 cm at the back end for an overlap. Sew.', 'waistband');
       step('Fold the waistband right sides together along the pressed line, sew across both short ends, trim the corners and turn it right side out. Fold under the free long edge, pin it over the seam on the inside, and stitch it down from the outside, right in the seam line. Sew a hook and eye on the overlap.');
     }
   }
   const flared = (t === 'dress' || t === 'skirt') && item.flare > 150;
-  step(`Try it on. Hem the ${t === 'pants' || t === 'shorts' ? 'legs' : t}: press 0.5 cm, then another 1 cm, to the wrong side and stitch close to the inner fold.${flared ? ' Let a flared skirt hang overnight before you hem it, so the fabric can settle.' : ''}`, 'hem');
+  step(`Try it on. Hem the ${t === 'pants' || t === 'shorts' ? 'legs' : t}: press 0.5 cm, then another 1 cm, to the wrong side and stitch close to the inner fold.${flared ? ' Let a flared skirt hang overnight before you hem it, so the fabric can settle.' : ''}`, 'hemline');
   step('Give everything a final press. Well done, you made it!');
   return steps;
 }

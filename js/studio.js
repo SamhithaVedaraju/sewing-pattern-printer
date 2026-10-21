@@ -10,7 +10,8 @@ import { fabricPlan, planSvg } from './sewing/fabric.js';
 import { glossify, initGlossaryPopup } from './sewing/glossary.js';
 import { BODY_FIGURE, MEASURE_TIPS, recommendSize } from './sizing/measure.js';
 import { getClaude, identifyGarments, writeInstructions, explain } from './ai/claude.js';
-import { CropTool, maskOf, applyShape } from './photo/outline.js';
+import { CropTool, maskOf, applyShape, guessGarment } from './photo/outline.js';
+import { garmentSketch } from './sewing/diagrams.js';
 import { buildPdf, savePdf } from './export/pdf.js';
 import { initSite } from './site.js';
 
@@ -55,9 +56,10 @@ function renderItems() {
       <div class="item__head"><h3>${itemLabel(i)}</h3><button class="btn btn--ghost btn--small" type="button" data-remove>Remove</button></div>
       ${it.example ? '<p class="item__example">Example garment</p>' : ''}
       <p class="item__desc">${esc(it.desc || `${t} · ${it.length}`)}</p>
+      ${it.needsCheck ? '<p class="notice notice--warn small">This is a guess from the photo’s outline. Check the garment, sleeves, neckline and length below.</p>' : ''}
       ${selectField('size', [...Object.keys(SIZES), 'Custom'], it.size, 'Size')}
       ${custom}
-      <details><summary>Change the style</summary><div class="fields">
+      <details${it.needsCheck ? ' open' : ''}><summary>Change the style</summary><div class="fields">
         ${selectField('type', GARMENTS, t, 'Garment')}${selectField('length', Object.keys(LENGTHS[t]), it.length, 'Length')}
         ${selectField('fit', Object.keys(EASE), it.fit, 'Fit')}${bodice ? selectField('sleeves', SLEEVES, it.sleeves, 'Sleeves') : selectField('close', CLOSURES, it.close, 'Waist closure')}
         ${bodice ? selectField('neck', NECKLINES, it.neck, 'Neckline') : ''}
@@ -71,6 +73,39 @@ function renderItems() {
   $('scope-card').hidden = items.length < 2;
   $('scope').innerHTML = `<button class="chip" type="button" data-scope="all" aria-pressed="${state.scope === 'all'}">All ${items.length} garments</button>`
     + items.map((_, i) => `<button class="chip" type="button" data-scope="${i}" aria-pressed="${state.scope === String(i)}">${itemLabel(i)} only</button>`).join('');
+}
+
+// ---------------------------------------------------------------- pictures
+
+/** Print width (mm) for a picture: at most maxW wide and maxH tall. */
+const printWidth = (f, maxW, maxH) => Math.min(maxW, (maxH * f.vw) / f.vh);
+
+/** A step diagram sized so tall pieces don't fill the screen. */
+const diagramHtml = (f, label) =>
+  `<svg class="diagram" style="width:${Math.round(Math.min(300, (320 * f.vw) / f.vh))}px" viewBox="0 0 ${f.vw} ${f.vh}" font-family="Arial,sans-serif" role="img" aria-label="${esc(label)}">${f.svg}</svg>`;
+
+/** Your photo beside a sketch of the finished garment, for the studio. */
+function garmentView(it, pieces) {
+  const sketch = garmentSketch(pieces, it);
+  const photo = state.photoUrl && !it.example
+    ? `<figure><img src="${state.photoUrl}" alt="Your photo"><figcaption>Your photo</figcaption></figure>` : '';
+  return `<div class="garment-view">${photo}<figure><svg viewBox="0 0 ${sketch.vw} ${sketch.vh}" role="img" aria-label="Sketch of the finished ${it.type}">${sketch.svg}</svg><figcaption>${it.example ? 'The example, sewn' : 'Your pattern, sewn'}</figcaption></figure></div>`;
+}
+
+/** The same comparison for print: the photo and one sketch per garment, side by side. */
+function garmentPanel(entries, withPhoto) {
+  const H = 100, gap = 10;
+  let x = 0, s = '';
+  if (withPhoto && state.photoUrl) {
+    s += `<image href="${state.photoUrl}" x="0" y="0" width="75" height="${H}" preserveAspectRatio="xMidYMid meet"/><text x="37.5" y="${H + 9}" font-size="6" text-anchor="middle" fill="#000">Your photo</text>`;
+    x = 75 + gap;
+  }
+  for (const { sketch, label } of entries) {
+    const w = (H * sketch.vw) / sketch.vh;
+    s += `<svg x="${x}" y="0" width="${w}" height="${H}" viewBox="0 0 ${sketch.vw} ${sketch.vh}">${sketch.svg}</svg><text x="${x + w / 2}" y="${H + 9}" font-size="6" text-anchor="middle" fill="#000">${esc(label)}</text>`;
+    x += w + gap;
+  }
+  return { svg: s, vw: x - gap, vh: H + 12 };
 }
 
 // ---------------------------------------------------------------- instructions
@@ -102,15 +137,15 @@ function aiPanel(it, i) {
   return `${photo}<div class="ai-state notice${own ? ' notice--ai' : ''}"><p>${message}</p>${button}</div>`;
 }
 
-function renderHow(active, stepsFor) {
+function renderHow(active, stepsFor, perItem) {
   $('how').innerHTML = active.map((i, k) => {
     const it = state.items[i];
+    const ctx = { pieces: perItem[k], item: it };
     const steps = stepsFor[k].map(([text, fig]) => {
-      const f = figureOf(fig);
-      const diagram = f ? `<svg class="diagram" viewBox="0 0 120 ${f[1]}" font-family="Arial,sans-serif" role="img" aria-label="Diagram for this step">${f[0]}</svg>` : '';
-      return `<li><div>${esc(text)}${diagram}</div></li>`;
+      const f = figureOf(fig, ctx);
+      return `<li><div>${esc(text)}${f ? diagramHtml(f, 'Diagram for this step') : ''}</div></li>`;
     }).join('');
-    return `<section class="how-garment"><h3>${itemLabel(i)} · size ${it.size}</h3>${aiPanel(it, i)}<ol class="steps">${steps}</ol></section>`;
+    return `<section class="how-garment"><h3>${itemLabel(i)} · size ${it.size}</h3>${garmentView(it, perItem[k])}${aiPanel(it, i)}<ol class="steps">${steps}</ol></section>`;
   }).join('');
   glossify($('how'));
 }
@@ -131,13 +166,17 @@ function renderFabric(plan) {
 
 // ---------------------------------------------------------------- print pages
 
-function startPages(grid, title, pieces, plan, paper) {
+function startPages(grid, title, pieces, plan, paper, active, perItem) {
   const { cols, rows, needed, count } = grid;
   const [PW, PH] = paper;
   const pg = new Pager(paper, 'Start here');
   const fs = pg.fs;
   pg.text(`${title} · ${$('paper').value} · ${count} pattern sheets in a ${cols} × ${rows} grid (empty squares need no printing)`, true);
   pg.gap();
+  const panel = garmentPanel(active.map((i, k) => ({ sketch: garmentSketch(perItem[k], state.items[i]), label: itemLabel(i) + ', sewn' })),
+    active.some((i) => !state.items[i].example));
+  pg.text('Your garment', true, 1.3);
+  pg.figure(panel.svg, panel.vw, panel.vh, printWidth(panel, PW - 2 * MG - 16, 60));
   ASSEMBLY.forEach((t) => pg.text(t));
   pg.gap();
   pg.text('Pieces', true);
@@ -168,13 +207,17 @@ function startPages(grid, title, pieces, plan, paper) {
   return pg.finish().map((s, j) => ({ svg: pageSvg(s, paper), label: j ? `Start here ${j + 1}` : 'Start here' }));
 }
 
-function howPages(active, stepsFor, paper) {
+function howPages(active, stepsFor, paper, perItem) {
   const pg = new Pager(paper, 'How to sew it');
+  const maxW = paper[0] - 2 * MG - 16;
   active.forEach((i, k) => {
     const it = state.items[i];
     const ai = it.ai;
+    const ctx = { pieces: perItem[k], item: it };
     pg.room(pg.fs * 10);
     pg.text(`${itemLabel(i)} · size ${it.size}`, true, 1.3);
+    const panel = garmentPanel([{ sketch: garmentSketch(perItem[k], it), label: 'Finished ' + it.type }], !it.example);
+    pg.figure(panel.svg, panel.vw, panel.vh, printWidth(panel, maxW, 45));
     if (ai?.summary) pg.text('From your photo: ' + ai.summary);
     if (ai?.details.length) pg.text('Details the basic pattern simplifies: ' + ai.details.join(', ') + '.');
     ai?.tips.forEach((t) => pg.text('• ' + t));
@@ -182,8 +225,8 @@ function howPages(active, stepsFor, paper) {
     pg.gap(0.4);
     stepsFor[k].forEach(([text, fig], j) => {
       pg.text(`${j + 1}. ${text}`);
-      const f = figureOf(fig);
-      if (f) pg.figure(f[0], 120, f[1], Math.min(55, paper[0] * 0.4));
+      const f = figureOf(fig, ctx);
+      if (f) pg.figure(f.svg, f.vw, f.vh, printWidth(f, Math.min(maxW, paper[0] * 0.55), 70));
       pg.gap(0.4);
     });
     pg.gap();
@@ -212,7 +255,7 @@ function render() {
   const perItem = active.map((i) => makePieces(items[i], itemLabel(i).toUpperCase()));
   const pieces = perItem.flat();
   const stepsFor = active.map((i, k) => (usingClaude(items[i]) ? items[i].aiSteps.steps : standardSteps(items[i], perItem[k].info)));
-  renderHow(active, stepsFor);
+  renderHow(active, stepsFor, perItem);
 
   const grid = layoutPattern(pieces, paper);
   const title = 'Pattern: ' + active.map((i) => `${itemLabel(i)} ${items[i].size}`).join(' + ');
@@ -221,7 +264,7 @@ function render() {
   const plan = fabricPlan(active, perItem, pieces);
   renderFabric(plan);
 
-  pages = [...startPages(grid, title, pieces, plan, paper), ...patternPages(grid, title), ...howPages(active, stepsFor, paper)];
+  pages = [...startPages(grid, title, pieces, plan, paper, active, perItem), ...patternPages(grid, title), ...howPages(active, stepsFor, paper, perItem)];
   $('sheets').innerHTML = pages.map((p) => `<div class="sheet"><span class="sheet__label">${p.label}</span>${p.svg}</div>`).join('');
   $('pattern-info').textContent = `${Math.round(grid.layout.W / 10)} × ${Math.round(grid.layout.H / 10)} cm · ${grid.count} pattern sheets + ${pages.length - grid.count} instruction pages on ${paperName}`;
   $('download-btn').textContent = `Download PDF (${pages.length} pages)`;
@@ -242,6 +285,13 @@ async function scan(whole) {
   const mask = maskOf(canvas);
   let found = [];
   let problem = '';
+  // A small copy of the photo, shown beside the pattern and printed on the PDF.
+  const thumb = document.createElement('canvas');
+  const k = Math.min(1, 420 / Math.max(canvas.width, canvas.height));
+  thumb.width = Math.round(canvas.width * k);
+  thumb.height = Math.round(canvas.height * k);
+  thumb.getContext('2d').drawImage(canvas, 0, 0, thumb.width, thumb.height);
+  state.photoUrl = thumb.toDataURL('image/jpeg', 0.82);
   setScanning(true);
   setStatus(state.aiQuality === 'best'
     ? 'Claude is looking at your photo. With Best detail this can take a minute or two…'
@@ -250,22 +300,25 @@ async function scan(whole) {
   const claude = await getClaude();
   state.aiAvailable = Boolean(claude);
   if (!claude) {
-    problem = 'AI is off on this version of the site, so I traced the outline only and assumed a dress. Choose the right garment under “Change the style”, or open the Claude version for photo recognition.';
+    problem = 'AI is off on this version of the site, so I worked from the outline of your photo.';
   } else {
     try {
       const blob = await new Promise((r) => canvas.toBlob(r, 'image/jpeg', 0.85));
       state.photo = blob;
       found = await identifyGarments(claude, blob, mask);
-      if (!found.length) problem = 'Claude couldn’t find a garment it can pattern in this photo, so I traced the outline and assumed a dress. Try a clearer photo, or choose the garment under “Change the style”.';
+      if (!found.length) problem = 'Claude couldn’t find a garment it can pattern in this photo, so I worked from its outline.';
     } catch (e) {
-      problem = `The AI scan didn’t work: ${explain(e)} I traced the outline only and assumed a dress.`;
+      problem = `The AI scan didn’t work: ${explain(e)} I worked from the outline of your photo instead.`;
     }
   }
   if (!found.length) {
-    const it = newItem('dress');
-    it.desc = 'dress · shape traced from outline (not identified)';
+    const type = guessGarment(mask);
+    const it = newItem(type);
+    it.desc = `${type} · guessed from the outline of your photo`;
+    it.needsCheck = true;
     applyShape(it, mask, [0, 0, 1, 1], 0.42, 0.6);
     found = [it];
+    problem += ` It looks like ${type === 'pants' || type === 'shorts' ? '' : 'a '}${type}. Check the garment, sleeves and neckline under “Change the style” so the pattern and steps match.`;
   }
   state.items = found;
   state.scope = 'all';
@@ -388,7 +441,7 @@ function bindEvents() {
     const it = state.items[i];
     const value = el.type === 'range' || el.type === 'number' ? Number(el.value) : el.value;
     if ('custom' in el.dataset) it.custom[key] = value;
-    else if (key === 'type') state.items[i] = Object.assign(newItem(value), { custom: it.custom, size: it.size });
+    else if (key === 'type') state.items[i] = Object.assign(newItem(value), { custom: it.custom, size: it.size, needsCheck: it.needsCheck });
     else { it[key] = value; if (key !== 'size') it.desc = ''; }
     if (key === 'type' || key === 'size') renderItems();
     render();

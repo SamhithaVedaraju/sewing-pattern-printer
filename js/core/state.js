@@ -11,6 +11,8 @@ export const state = {
   pref: { size: 'M', bottom: '', custom: { ...SIZES.M } },
   /** The cropped photo sent to Claude, kept for "Write new instructions". */
   photo: null,
+  /** A small copy of the photo (data URL) shown beside the pattern and on the PDF. */
+  photoUrl: '',
   /** True once Claude answered in this view. */
   aiAvailable: false,
   /** 'best' uses Claude's most capable model; 'fast' its everyday one. */

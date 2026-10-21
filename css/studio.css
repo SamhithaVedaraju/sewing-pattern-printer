@@ -100,6 +100,11 @@
 .how-garment > h3 { margin-bottom: var(--space-3); }
 .from-photo { display: grid; gap: var(--space-2); margin-bottom: var(--space-4); }
 .from-photo ul { margin: 0; padding-left: 1.2em; }
+.garment-view { display: flex; flex-wrap: wrap; gap: var(--space-4); margin-bottom: var(--space-4); }
+.garment-view figure { margin: 0; display: grid; gap: var(--space-1); justify-items: center; }
+.garment-view img, .garment-view svg { display: block; height: 200px; width: auto; max-width: 100%; background: #fff; border: 1px solid var(--rule); border-radius: var(--radius-sm); padding: var(--space-2); }
+.garment-view img { object-fit: contain; }
+.garment-view figcaption { font: 500 0.72rem var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-soft); }
 .how-garment .ai-state { margin-bottom: var(--space-5); }
 .fabric-intro { display: grid; gap: var(--space-2); margin-bottom: var(--space-4); }
 .ai-state { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); justify-content: space-between; }

@@ -6,6 +6,29 @@ import { state, newItem, optionKey } from '../core/state.js';
 import { inRange } from '../core/dom.js';
 import { applyShape } from '../photo/outline.js';
 import { makePieces } from '../pattern/geometry.js';
+import { diagramsFor } from '../sewing/diagrams.js';
+import { FIGURES } from '../sewing/instructions.js';
+
+/** What each diagram shows, so Claude can pick the right one for a step. */
+const DIAGRAM_NOTES = {
+  cut: 'every pattern piece laid out, with fold edges and grainlines',
+  shoulders: 'front laid on back, right sides together, shoulder seam highlighted',
+  facing: 'a 6 cm facing band traced along the neckline',
+  neckline: 'the neckline seam with clips into the curve',
+  sleeve: 'the sleeve cap pinned into the armhole',
+  sides: 'front laid on back with the side seam highlighted (and the zipper opening, if any)',
+  armhole: 'bias binding around the armhole',
+  hemline: 'the hem turned up along the bottom edge',
+  sleevehem: 'the sleeve hem turned up',
+  waistband: 'the waistband attached along the waist edge',
+  legs: 'front leg on back leg with the inside-leg and side seams highlighted',
+  crotch: 'the two legs joined along the curved crotch seam',
+  rst: 'close-up: two layers right sides together, pinned',
+  seam: 'close-up: sewing 1.5 cm from the edge',
+  press: 'close-up: pressing a seam open',
+  clip: 'close-up: clipping a curved seam allowance',
+  hem: 'close-up: cross-section of a double-fold hem',
+};
 
 /** Claude's ask function, or null when this page isn't running inside Claude. */
 export async function getClaude() {
@@ -109,6 +132,7 @@ export async function writeInstructions(item, onChange) {
   const bodice = isBodice(item.type);
   const pieces = makePieces(item, item.type.toUpperCase());
   const ai = item.ai || {};
+  const figures = [...diagramsFor(item), ...Object.keys(FIGURES)];
   const photoNote = state.photo
     ? ` The photo shows the original garment${item.box ? ` (inside the box ${item.box.map((v) => v.toFixed(2)).join(', ')} given as fractions of the image)` : ''}; refer to what you see in it where that helps.`
     : '';
@@ -118,8 +142,10 @@ Pattern pieces the person has (1.5 cm seam allowance and 1.5 cm hem allowance ar
 Closure and notions: ${notionsFor(item, pieces.info)}.
 Details seen in the photo that the basic pattern leaves out: ${ai.details && ai.details.length ? ai.details.join(', ') : 'none noted'}.
 Rules: 10 to 16 steps in order, from preparing the fabric to the final press. Plain, friendly words for a first-time sewist. Use only the pieces listed; for any extra detail from the photo, say how to add it simply or that it can be skipped. All measurements in cm.
-For about half of the steps (the ones where a picture helps most) add a simple diagram drawn specially for that step, as SVG markup: only the inner elements of an <svg viewBox="0 0 120 70">, using path, rect, circle, ellipse, line, polyline, polygon, text and g. No <svg> tag, scripts, images, CSS, or links. Fabric right side: fill #f4c6d6, stroke #b5446e. Wrong side: fill #f7f7f7, stroke #666. Stitching: stroke #b5446e with stroke-dasharray "3 2". Labels: text with font-size 5 or 6 and fill #222, kept inside the 120 x 70 area. Keep each diagram clear and simple.
-Return ONLY JSON: {"steps":[{"text":"step text","svg":"diagram markup or empty string"}]}`;
+Pictures: the app draws diagrams from this garment's real pattern pieces. For each step where a picture helps, set "figure" to the one that shows that step best:
+${figures.map((f) => `- ${f}: ${DIAGRAM_NOTES[f]}`).join('\n')}
+Use each garment diagram for the step it describes and put it on the step where that seam is sewn. Leave "figure" empty when no picture helps. Only if a step really needs a picture none of these show (for example a detail from the photo such as a pocket or a ruffle), add "svg": the inner elements of an <svg viewBox="0 0 120 70"> using path, rect, circle, ellipse, line, polyline, polygon, text and g only (no <svg> tag, scripts, images, CSS or links; right side of fabric fill #f4c6d6 stroke #b5446e, wrong side fill #f7f7f7 stroke #666, stitching stroke #b5446e dasharray "3 2", labels font-size 5-6 fill #222).
+Return ONLY JSON: {"steps":[{"text":"step text","figure":"one of the names above or empty","svg":"only when needed, otherwise empty"}]}`;
 
   item.aiState = 'busy';
   onChange();
@@ -129,8 +155,10 @@ Return ONLY JSON: {"steps":[{"text":"step text","svg":"diagram markup or empty s
       .filter((s) => s && typeof s.text === 'string' && s.text.trim())
       .slice(0, 20)
       .map((s) => {
+        const text = s.text.trim().slice(0, 800);
+        if (typeof s.figure === 'string' && figures.includes(s.figure)) return [text, s.figure];
         const svg = cleanSvg(s.svg);
-        return [s.text.trim().slice(0, 800), svg ? { svg } : null];
+        return [text, svg ? { svg } : null];
       });
     if (steps.length < 4) throw { code: 'empty_completion' };
     item.aiSteps = { key: optionKey(item), steps };

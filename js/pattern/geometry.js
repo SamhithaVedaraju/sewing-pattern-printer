@@ -39,10 +39,18 @@ function bodice(p, back, type) {
   const tail = hemY > hipY + 5
     ? `Q${(waistW + hipW) / 2} ${(waistY + hipY) / 2} ${hipW} ${hipY}L${hemW} ${hemY}`
     : `L${waistW} ${hemY}`;
-  const d = `M0 ${nd}${neckPath}L${shoulder} 45` + arm.slice(arm.indexOf('C'))
-    + `Q${(bustW + waistW) / 2 + 4} ${(armDepth + waistY) / 2} ${waistW} ${waistY}${tail}L0 ${hemY}Z`;
+  const side = `M${bustW} ${armDepth}Q${(bustW + waistW) / 2 + 4} ${(armDepth + waistY) / 2} ${waistW} ${waistY}${tail}`;
+  const d = `M0 ${nd}${neckPath}L${shoulder} 45` + arm.slice(arm.indexOf('C')) + side.slice(side.indexOf('Q')) + `L0 ${hemY}Z`;
+  // Each seam edge on its own, so diagrams can highlight exactly where to sew.
+  const edges = {
+    neck: `M0 ${nd}${neckPath}`,
+    shoulder: `M${nw} 0L${shoulder} 45`,
+    arm,
+    side,
+    hem: `M${hemY > hipY + 5 ? hemW : waistW} ${hemY}L0 ${hemY}`,
+  };
 
-  return { d, arm: pathLength(arm), w: Math.max(bustW, hemW, hipW, waistW), h: hemY, bw: bustW, ad: armDepth, wy: waistY };
+  return { d, edges, arm: pathLength(arm), w: Math.max(bustW, hemW, hipW, waistW), h: hemY, bw: bustW, ad: armDepth, wy: waistY, sh: shoulder };
 }
 
 /** Set-in sleeve whose cap length matches the armhole (front + back, plus 3% ease). */
@@ -59,7 +67,12 @@ function sleeve(p, front, kind) {
   const len = kind === 'short' ? 190 : 570;
   const cuff = kind === 'short' ? bicep * 0.9 : bicep * 0.72;
   const inset = (bicep - cuff) / 2;
-  return { d: cap(capH) + `L${bicep - inset} ${len}L${inset} ${len}Z`, w: bicep, h: len, ch: capH };
+  const edges = {
+    cap: cap(capH),
+    seams: `M${bicep} ${capH}L${bicep - inset} ${len}M0 ${capH}L${inset} ${len}`,
+    hem: `M${inset} ${len}L${bicep - inset} ${len}`,
+  };
+  return { d: cap(capH) + `L${bicep - inset} ${len}L${inset} ${len}Z`, edges, w: bicep, h: len, ch: capH };
 }
 
 /** One leg panel (front or back) for pants and shorts. */
@@ -73,9 +86,17 @@ function leg(p, back, short) {
   const inseam = short ? (p.v === 1 ? 220 : 90) * p.ht / 165 : p.ht * 4.6 * p.v;
   const halfHem = p.flare * (p.H + p.ease) * 1.25;
   const hemY = crotchDepth + inseam;
+  const side = `M${waistF} 0Q${waistF + (hipF - waistF) * 0.4} ${hipDepth * 0.7} ${hipF} ${hipDepth}L${centre + halfHem} ${hemY}`;
+  const edges = {
+    waist: `M0 0L${waistF} 0`,
+    side,
+    hem: `M${centre + halfHem} ${hemY}L${centre - halfHem} ${hemY}`,
+    inseam: `M${centre - halfHem} ${hemY}L${-crotchExt} ${crotchDepth}`,
+    crotch: `M${-crotchExt} ${crotchDepth}Q0 ${crotchDepth} 0 ${crotchDepth * 0.5}L0 0`,
+  };
   return {
-    d: `M0 0L${waistF} 0Q${waistF + (hipF - waistF) * 0.4} ${hipDepth * 0.7} ${hipF} ${hipDepth}L${centre + halfHem} ${hemY}L${centre - halfHem} ${hemY}L${-crotchExt} ${crotchDepth}Q0 ${crotchDepth} 0 ${crotchDepth * 0.5}Z`,
-    x0: -crotchExt, w: Math.max(hipF, centre + halfHem), h: hemY, gx: centre,
+    d: `M0 0L${waistF} 0` + side.slice(side.indexOf('Q')) + `L${centre - halfHem} ${hemY}L${-crotchExt} ${crotchDepth}Q0 ${crotchDepth} 0 ${crotchDepth * 0.5}Z`,
+    edges, x0: -crotchExt, w: Math.max(hipF, centre + halfHem), h: hemY, gx: centre,
   };
 }
 
@@ -124,8 +145,12 @@ export function makePieces(item, label) {
     const hipDepth = 200;
     const len = Math.max(p.v * 10 * p.ht / 165, hipDepth + 40);
     const hem = hip * p.flare;
+    const side = `M${waist} 0Q${(waist + hip) / 2} ${hipDepth * 0.55} ${hip} ${hipDepth}L${hem} ${len}`;
     add('PANEL', 'Cut 2 on fold (front + back)',
-      { d: `M0 0L${waist} 0Q${(waist + hip) / 2} ${hipDepth * 0.55} ${hip} ${hipDepth}L${hem} ${len}L0 ${len}Z`, w: Math.max(hem, hip), h: len },
+      {
+        d: `M0 0L${waist} 0Q${(waist + hip) / 2} ${hipDepth * 0.55} ${hip} ${hipDepth}L${hem} ${len}L0 ${len}Z`, w: Math.max(hem, hip), h: len,
+        edges: { waist: `M0 0L${waist} 0`, side, hem: `M${hem} ${len}L0 ${len}` },
+      },
       { fold: 1, gx: hip * 0.45, g1: 60, g2: len - 40, ty: hipDepth, cut: 'f2' });
     band((p.H + 4) * 10);
   } else {
