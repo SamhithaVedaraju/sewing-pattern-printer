@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="claude:viewport-fit-sides" content="cover">
+  <title>Pattern Studio</title>
+  <meta name="description" content="Upload a photo of a garment and get a printable, beginner-friendly sewing pattern with instructions, fabric layout and supplies.">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&family=Young+Serif&display=swap">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/studio.css">
+  <link rel="stylesheet" href="css/print.css" media="print">
+  <style id="page-size"></style>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to the studio</a>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="index.html"><img src="assets/logo.svg" alt="" width="30" height="30"><span>Pattern Printer</span></a>
+      <nav class="nav" aria-label="Main">
+        <a href="index.html">Home</a>
+        <a href="studio.html" aria-current="page">Make a pattern</a>
+        <a href="learn.html">Learn</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" class="wrap studio">
+    <header class="studio-head">
+      <p class="label">Pattern studio</p>
+      <h1>Make a pattern</h1>
+      <p class="muted">Upload a photo, check the garments and your size, then print your pattern at home.</p>
+    </header>
+
+    <div class="studio-grid">
+      <aside class="studio-side" aria-label="Photo and size">
+        <section class="card" aria-labelledby="photo-title">
+          <div class="card__head"><h2 id="photo-title"><span class="step-num">01</span>Photo</h2></div>
+          <label class="dropzone" for="photo-input">
+            <input type="file" id="photo-input" accept="image/*">
+            <strong>Choose a photo</strong>
+            <span class="muted">A garment on a plain background works best</span>
+          </label>
+          <div id="crop-area" class="crop" hidden>
+            <p class="muted small">Drag on the photo to frame the garment, then scan it.</p>
+            <canvas id="crop-canvas"></canvas>
+            <div class="crop__actions">
+              <button class="btn btn--primary" id="scan-btn" type="button">Crop &amp; scan</button>
+              <button class="btn btn--ghost" id="scan-whole-btn" type="button">Use whole photo</button>
+            </div>
+          </div>
+          <p id="status" class="status" role="status" aria-live="polite"></p>
+        </section>
+
+        <section class="card" aria-labelledby="size-title">
+          <div class="card__head"><h2 id="size-title"><span class="step-num">02</span>Garments &amp; size</h2></div>
+          <div class="chips size-help">
+            <button class="chip" id="measure-btn" type="button">How to measure</button>
+            <button class="chip" id="finder-btn" type="button">Find my size</button>
+          </div>
+          <div id="items" class="items"></div>
+          <details class="add-manual">
+            <summary>Add a garment by hand</summary>
+            <div class="add-manual__row">
+              <label class="field"><span>Garment</span>
+                <select id="add-type"><option>dress</option><option>top</option><option>skirt</option><option>pants</option><option>shorts</option></select>
+              </label>
+              <button class="btn btn--ghost" id="add-btn" type="button">Add</button>
+            </div>
+          </details>
+        </section>
+
+        <section class="card" id="scope-card" aria-labelledby="scope-title" hidden>
+          <div class="card__head"><h2 id="scope-title">Which patterns?</h2></div>
+          <div id="scope" class="chips"></div>
+        </section>
+
+        <section class="card" aria-labelledby="ai-title">
+          <div class="card__head"><h2 id="ai-title">Claude’s detail</h2></div>
+          <div class="chips" role="group" aria-label="AI quality">
+            <button class="chip" type="button" data-quality="best" aria-pressed="true">Best</button>
+            <button class="chip" type="button" data-quality="fast" aria-pressed="false">Faster</button>
+          </div>
+          <p class="muted small" id="ai-note">Best uses Claude’s most capable model, which knows garments and dressmaking in the most depth. It can take a minute or two. Faster answers sooner with a little less detail.</p>
+        </section>
+      </aside>
+
+      <section class="studio-work" aria-label="Your pattern">
+        <div class="tabs" role="tablist" aria-label="Pattern views">
+          <button class="tab" role="tab" id="tab-pattern" aria-controls="panel-pattern" aria-selected="true">Pattern</button>
+          <button class="tab" role="tab" id="tab-sew" aria-controls="panel-sew" aria-selected="false" tabindex="-1">How to sew</button>
+          <button class="tab" role="tab" id="tab-fabric" aria-controls="panel-fabric" aria-selected="false" tabindex="-1">Fabric &amp; supplies</button>
+          <button class="tab" role="tab" id="tab-print" aria-controls="panel-print" aria-selected="false" tabindex="-1">Print &amp; download</button>
+        </div>
+
+        <div class="tab-panel is-active card" role="tabpanel" id="panel-pattern" aria-labelledby="tab-pattern">
+          <div class="panel-bar">
+            <label class="toggle"><input type="checkbox" id="show-sheets"> Show how it splits into sheets</label>
+            <p class="mono muted" id="pattern-info"></p>
+          </div>
+          <div class="preview" id="preview"></div>
+          <p class="legend" id="legend">Solid outer line = cut. Dashed line = sew, 1.5 cm in from the edge (the seam allowance). Edges marked FOLD go on the fold of the fabric, and the arrow on each piece is the grainline.</p>
+        </div>
+
+        <div class="tab-panel card" role="tabpanel" id="panel-sew" aria-labelledby="tab-sew">
+          <div id="how"></div>
+        </div>
+
+        <div class="tab-panel card" role="tabpanel" id="panel-fabric" aria-labelledby="tab-fabric">
+          <div id="fabric"></div>
+        </div>
+
+        <div class="tab-panel card" role="tabpanel" id="panel-print" aria-labelledby="tab-print">
+          <div class="print-bar">
+            <label class="field"><span>Paper size</span><select id="paper"></select></label>
+            <button class="btn btn--primary" id="download-btn" type="button">Download PDF</button>
+            <button class="btn btn--ghost" id="print-btn" type="button">Print</button>
+          </div>
+          <p class="muted small" id="download-status">Print at 100% / Actual size. The first page explains how to tape the sheets together, the last pages show how to sew it, and the pattern has a 5 × 5 cm square to check the scale.</p>
+          <div id="sheets" class="sheets"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <dialog class="dialog" id="measure-dialog" aria-labelledby="measure-title">
+    <button class="icon-btn dialog__close" type="button" id="measure-close" aria-label="Close">✕</button>
+    <div class="dialog__inner">
+      <h2 id="measure-title">How to measure</h2>
+      <div class="measure">
+        <div id="body-figure"></div>
+        <ul class="tick-list" id="measure-tips"></ul>
+      </div>
+      <form id="finder" class="finder" novalidate>
+        <h3 id="finder-title">Find my size</h3>
+        <p class="muted small">Enter your measurements in centimetres.</p>
+        <div class="fields">
+          <label class="field"><span>Bust (cm)</span><input type="number" id="m-B" inputmode="decimal"></label>
+          <label class="field"><span>Waist (cm)</span><input type="number" id="m-W" inputmode="decimal"></label>
+          <label class="field"><span>Hip (cm)</span><input type="number" id="m-H" inputmode="decimal"></label>
+          <label class="field"><span>Height (cm)</span><input type="number" id="m-ht" inputmode="decimal"></label>
+        </div>
+        <button class="btn btn--primary btn--block" type="submit">Recommend my size</button>
+        <div id="finder-result"></div>
+      </form>
+    </div>
+  </dialog>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p>Pattern Printer · patterns drafted in your browser, sized in centimetres.</p>
+      <nav aria-label="Footer"><a href="learn.html#measure">How to measure</a><a href="learn.html#glossary">Glossary</a><a href="https://github.com/SamhithaVedaraju/sewing-pattern-printer">Source on GitHub</a></nav>
+    </div>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script type="module" src="js/studio.js"></script>
+</body>
+</html>

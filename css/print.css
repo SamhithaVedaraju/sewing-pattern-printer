@@ -1,0 +1,10 @@
+/* Printing from the studio: only the pattern sheets, one per page, full size.
+   The page size itself is set by the studio script for the chosen paper. */
+body { background: #fff !important; display: block; }
+body::before, .site-header, .site-footer, .studio-head, .studio-side, .tabs, .skip,
+.tab-panel:not(#panel-print), .print-bar, #download-status, .term-pop, dialog { display: none !important; }
+.studio, .studio-grid, .studio-work { display: block !important; padding: 0 !important; margin: 0 !important; max-width: none !important; }
+#panel-print { display: block !important; border: 0 !important; padding: 0 !important; background: #fff !important; }
+.sheets { display: block !important; margin: 0 !important; }
+.sheet { border: 0 !important; border-radius: 0 !important; page-break-after: always; break-after: page; }
+.sheet__label { display: none !important; }

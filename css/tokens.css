@@ -1,0 +1,86 @@
+/* Design tokens.
+   Layout concept: pattern paper on a cutting mat. A faint 1 cm grid runs under every page,
+   cards are sheets of pattern paper, the mat green leads, the rose thread line marks what's sewn. */
+:root {
+  /* colour */
+  --paper: #f3f5f1;          /* page ground: cool pattern-paper white */
+  --sheet: #ffffff;          /* cards and panels */
+  --ink: #1b2528;            /* text */
+  --ink-soft: #56635f;       /* secondary text */
+  --rule: #d6dbd3;           /* borders and dividers */
+  --grid: rgba(30, 107, 90, 0.07);
+  --mat: #1e6b5a;            /* primary: cutting-mat green */
+  --mat-strong: #154f42;
+  --on-mat: #ffffff;
+  --mat-tint: #e3efe9;
+  --thread: #b5446e;         /* accent: the sewing line */
+  --thread-tint: #f7e5ec;
+  --notice: #fff4d6;         /* warnings */
+  --notice-ink: #6b4b00;
+  --shadow: 0 1px 2px rgba(20, 40, 35, 0.06), 0 8px 24px rgba(20, 40, 35, 0.06);
+
+  /* type */
+  --font-display: "Young Serif", Georgia, "Times New Roman", serif;
+  --font-body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  --step--1: 0.875rem;
+  --step-0: 1rem;
+  --step-1: 1.2rem;
+  --step-2: 1.5rem;
+  --step-3: clamp(1.8rem, 1.4rem + 1.6vw, 2.4rem);
+  --step-4: clamp(2.3rem, 1.6rem + 3vw, 3.6rem);
+
+  /* shape and space */
+  --radius: 10px;
+  --radius-sm: 6px;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4.5rem;
+  --content: 1180px;
+  --measure: 65ch;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0f1816;
+    --sheet: #16211e;
+    --ink: #e4ebe7;
+    --ink-soft: #9db0a9;
+    --rule: #2a3a35;
+    --grid: rgba(120, 200, 170, 0.05);
+    --mat: #5fb79d;
+    --mat-strong: #86cdb7;
+    --on-mat: #072019;
+    --mat-tint: #1c3029;
+    --thread: #ec8fb0;
+    --thread-tint: #3a2129;
+    --notice: #3a2f12;
+    --notice-ink: #f3dc9b;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --paper: #0f1816;
+  --sheet: #16211e;
+  --ink: #e4ebe7;
+  --ink-soft: #9db0a9;
+  --rule: #2a3a35;
+  --grid: rgba(120, 200, 170, 0.05);
+  --mat: #5fb79d;
+  --mat-strong: #86cdb7;
+  --on-mat: #072019;
+  --mat-tint: #1c3029;
+  --thread: #ec8fb0;
+  --thread-tint: #3a2129;
+  --notice: #3a2f12;
+  --notice-ink: #f3dc9b;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
+  color-scheme: dark;
+}

@@ -3,6 +3,10 @@
 Ideas for making Pattern Printer more useful, especially for people who are new to sewing.
 Status: **Done** = shipped · **In progress** = being built now · no tag = idea.
 
+## The website
+- **Multi-page site** (Done) – a home page, a pattern studio and a Learn page, built from separate CSS and JavaScript modules.
+- **Claude-written instructions** (Done) – new steps and diagrams for every photo, using Claude's most capable model by default.
+
 ## Teaching beginners
 - **Step-by-step sewing instructions** (Done) – numbered, plain-language steps generated for the exact pattern you chose, with small diagrams.
 - **Skill levels** – simpler beginner versions of each garment (elastic waist, sleeveless, facings instead of collars). Started: skirts, pants and shorts can already use an elastic waist.

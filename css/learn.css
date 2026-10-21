@@ -1,0 +1,55 @@
+/* Learn page: a reference with a contents column beside it. */
+.learn { padding-block: var(--space-6) 0; }
+.learn-head { display: grid; gap: var(--space-3); margin-bottom: var(--space-6); }
+.learn-grid {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: var(--space-7);
+  align-items: start;
+}
+.toc {
+  position: sticky;
+  top: calc(env(safe-area-inset-top, 0px) + 84px);
+  display: grid;
+  gap: var(--space-3);
+}
+.toc ol { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--space-1); border-left: 1.5px dashed var(--rule); }
+.toc a { display: block; padding: var(--space-1) var(--space-3); color: var(--ink-soft); text-decoration: none; font-size: var(--step--1); font-weight: 700; }
+.toc a:hover { color: var(--mat); }
+@media (max-width: 860px) {
+  .learn-grid { grid-template-columns: minmax(0, 1fr); gap: var(--space-5); }
+  .toc { position: static; }
+  .toc ol { display: flex; flex-wrap: wrap; border-left: 0; gap: var(--space-2); }
+  .toc a { border: 1px solid var(--rule); border-radius: 999px; background: var(--sheet); }
+}
+
+.learn-body { display: grid; gap: var(--space-7); min-width: 0; }
+.learn-section { display: grid; gap: var(--space-4); scroll-margin-top: 90px; }
+.learn-section > h2 { padding-bottom: var(--space-3); border-bottom: 1.5px dashed var(--rule); }
+
+.measure-layout { display: grid; grid-template-columns: minmax(160px, 240px) minmax(0, 1fr); gap: var(--space-5); align-items: start; }
+@media (max-width: 560px) { .measure-layout { grid-template-columns: minmax(0, 1fr); } }
+
+.card--flush { padding: 0; }
+.card--flush .table th:first-child, .card--flush .table td:first-child { padding-left: var(--space-5); }
+.card--flush .table th:last-child, .card--flush .table td:last-child { padding-right: var(--space-5); }
+
+.techniques { display: grid; gap: var(--space-4); }
+.technique {
+  display: grid;
+  grid-template-columns: minmax(160px, 240px) minmax(0, 1fr);
+  gap: var(--space-5);
+  align-items: center;
+  padding: var(--space-4);
+  background: var(--sheet);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+.technique h3 { margin-bottom: var(--space-2); }
+.technique p { color: var(--ink-soft); }
+@media (max-width: 560px) { .technique { grid-template-columns: minmax(0, 1fr); } }
+
+.glossary { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0 var(--space-6); }
+.glossary__entry { padding-block: var(--space-3); border-top: 1px solid var(--rule); scroll-margin-top: 90px; }
+.glossary dt { font-family: var(--font-display); font-size: var(--step-1); }
+.glossary dd { margin: var(--space-1) 0 0; color: var(--ink-soft); }

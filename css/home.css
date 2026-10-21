@@ -1,0 +1,103 @@
+/* Home page */
+.hero { padding-block: var(--space-7) var(--space-6); }
+.hero__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: var(--space-7);
+  align-items: center;
+}
+.hero__text { display: grid; gap: var(--space-4); }
+.hero__lede { font-size: var(--step-1); color: var(--ink-soft); max-width: 52ch; }
+.hero__actions { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-2); }
+.hero__facts { color: var(--ink-soft); }
+
+/* The hero piece: a sheet of pattern paper pinned to the mat */
+.hero__sheet {
+  margin: 0;
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: var(--space-4);
+  box-shadow: var(--shadow);
+  transform: rotate(-1.5deg);
+  display: grid;
+  gap: var(--space-3);
+  max-width: 440px;
+  justify-self: center;
+  width: 100%;
+}
+.hero__piece svg { display: block; width: 100%; height: auto; max-height: 520px; }
+.hero__sheet figcaption { color: #56635f; text-transform: uppercase; font-size: 0.72rem; }
+.hero-sew { stroke-dashoffset: 0; animation: sew 2.4s ease-out both; }
+@keyframes sew { from { stroke-dashoffset: 220; } to { stroke-dashoffset: 0; } }
+
+@media (max-width: 820px) {
+  .hero__grid { grid-template-columns: minmax(0, 1fr); gap: var(--space-6); }
+  .hero__sheet { max-width: 360px; transform: none; }
+}
+
+/* Bands */
+.band { padding-block: var(--space-7) 0; }
+.section-head { display: grid; gap: var(--space-2); margin-bottom: var(--space-5); }
+
+/* Process: a real sequence, so it is numbered */
+.process {
+  list-style: none;
+  counter-reset: step;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-4);
+}
+.process li {
+  counter-increment: step;
+  background: var(--sheet);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: var(--space-5);
+  display: grid;
+  gap: var(--space-2);
+  align-content: start;
+}
+.process li::before {
+  content: counter(step, decimal-leading-zero);
+  font-family: var(--font-mono);
+  color: var(--thread);
+  font-size: var(--step--1);
+  padding-bottom: var(--space-2);
+  border-bottom: 1.5px dashed var(--rule);
+  margin-bottom: var(--space-1);
+}
+
+/* Features: a list divided by cut lines rather than a grid of cards */
+.feature-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 0 var(--space-6);
+}
+.feature-list li {
+  display: grid;
+  gap: var(--space-2);
+  padding-block: var(--space-4);
+  border-top: 1.5px dashed var(--rule);
+}
+.feature-list h3 { font-size: var(--step-1); }
+.feature-list p { color: var(--ink-soft); }
+
+.card--flush { padding: 0; }
+.card--flush .table th:first-child, .card--flush .table td:first-child { padding-left: var(--space-5); }
+
+.print-note { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: var(--space-6); align-items: start; }
+@media (max-width: 760px) { .print-note { grid-template-columns: minmax(0, 1fr); } }
+
+/* Closing call to action on the mat */
+.cta { margin-top: var(--space-8); background: var(--mat); color: var(--on-mat); }
+.cta__inner { padding-block: var(--space-7); display: grid; gap: var(--space-3); justify-items: start; }
+.cta__inner p { max-width: 55ch; opacity: 0.9; }
+.cta__btn { background: var(--on-mat); color: var(--mat); margin-top: var(--space-2); }
+.cta__btn:hover { background: var(--paper); color: var(--mat-strong); }
+.cta + .site-footer, main:has(.cta) + .site-footer { margin-top: 0; }

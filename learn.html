@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="claude:viewport-fit-sides" content="cover">
+  <title>Sewing Basics</title>
+  <meta name="description" content="How to measure yourself, the size chart, five beginner sewing techniques, a glossary of sewing words and which fabrics to choose.">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&family=Young+Serif&display=swap">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/learn.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="index.html"><img src="assets/logo.svg" alt="" width="30" height="30"><span>Pattern Printer</span></a>
+      <nav class="nav" aria-label="Main">
+        <a href="index.html">Home</a>
+        <a href="studio.html">Make a pattern</a>
+        <a href="learn.html" aria-current="page">Learn</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" class="wrap learn">
+    <header class="learn-head">
+      <p class="label">Learn</p>
+      <h1>Sewing basics</h1>
+      <p class="muted prose">Everything you need before you cut into fabric: how to measure, which size to choose, the five techniques every pattern here uses, and what the sewing words mean.</p>
+    </header>
+
+    <div class="learn-grid">
+      <nav class="toc" aria-label="On this page">
+        <p class="label">On this page</p>
+        <ol>
+          <li><a href="#measure">How to measure</a></li>
+          <li><a href="#sizes">Size chart</a></li>
+          <li><a href="#techniques">Five techniques</a></li>
+          <li><a href="#fabric">Choosing fabric</a></li>
+          <li><a href="#printing">Printing and taping</a></li>
+          <li><a href="#glossary">Glossary</a></li>
+        </ol>
+      </nav>
+
+      <div class="learn-body">
+        <section id="measure" class="learn-section">
+          <h2>How to measure</h2>
+          <div class="measure-layout">
+            <div id="body-figure"></div>
+            <ul class="tick-list" id="measure-tips"></ul>
+          </div>
+        </section>
+
+        <section id="sizes" class="learn-section">
+          <h2>Size chart</h2>
+          <p class="prose">Body measurements in centimetres. The pattern adds ease on top of these, so choose by your body, not by clothes you own. If you fall between sizes, the studio’s <a href="studio.html">Find my size</a> can use your own measurements instead.</p>
+          <div class="table-wrap card card--flush"><table class="table" id="size-table"></table></div>
+        </section>
+
+        <section id="techniques" class="learn-section">
+          <h2>Five techniques</h2>
+          <p class="prose">Every garment in the studio is put together with these. Practise each one on a scrap of fabric before you start.</p>
+          <div class="techniques" id="techniques-list"></div>
+        </section>
+
+        <section id="fabric" class="learn-section">
+          <h2>Choosing fabric</h2>
+          <p class="prose" id="fabric-tip"></p>
+          <div class="table-wrap card card--flush"><table class="table" id="fabric-table"></table></div>
+        </section>
+
+        <section id="printing" class="learn-section">
+          <h2>Printing and taping</h2>
+          <ol class="tick-list prose">
+            <li>Print the PDF at 100% / Actual size. “Fit to page” shrinks the pattern.</li>
+            <li>Measure the 5 × 5 cm square on the pattern. If it isn’t exactly 5 cm, check your printer settings and print again.</li>
+            <li>On every sheet, cut off the left and top margins along the solid scissor line. Keep the shaded tabs on the right and bottom.</li>
+            <li>Start at the top-left sheet. Lay the next sheet’s trimmed edge over the shaded tab, match the lines and tape. The map on the “Start here” page shows the order.</li>
+            <li>Cut each piece on the solid outer line. The dashed line inside it is where you sew, 1.5 cm in: that strip is the seam allowance.</li>
+          </ol>
+        </section>
+
+        <section id="glossary" class="learn-section">
+          <h2>Glossary</h2>
+          <dl class="glossary" id="glossary-list"></dl>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p>Pattern Printer · patterns drafted in your browser, sized in centimetres.</p>
+      <nav aria-label="Footer"><a href="studio.html">Make a pattern</a><a href="index.html">Home</a><a href="https://github.com/SamhithaVedaraju/sewing-pattern-printer">Source on GitHub</a></nav>
+    </div>
+  </footer>
+
+  <script type="module" src="js/learn.js"></script>
+</body>
+</html>
