@@ -33,6 +33,11 @@ button.chip.on{background:var(--acc);color:#fff;border-color:var(--acc)}
 #cropw{display:none;margin-top:10px}#cv{width:100%;touch-action:none;border-radius:10px;cursor:crosshair;display:block}
 .hs{font-size:15px;margin:14px 0 4px}.hs:first-child{margin-top:0}.steps{padding-left:22px;margin:0 0 8px}.steps li{margin-bottom:8px}
 .fig{display:block;width:100%;max-width:240px;height:auto;background:#fff;border:1px solid var(--line);border-radius:8px;margin:6px 0 2px}
+.ovl{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;justify-content:center;align-items:flex-start;padding:16px;z-index:50;overflow:auto}.ovl.on{display:flex}
+.pan{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;max-width:560px;width:100%;position:relative;margin:auto 0}
+button.x{position:absolute;right:10px;top:10px;padding:4px 10px;background:var(--bg);color:var(--ink);border:1px solid var(--line)}
+.bf{display:block;width:100%;max-width:250px;margin:4px auto}.bf .b{fill:var(--line)}.bf .a{stroke:var(--line);stroke-width:9;stroke-linecap:round;fill:none}.bf .m{fill:none;stroke:var(--acc);stroke-width:2}.bf text{fill:var(--ink);font-size:12px}
+.tips{padding-left:20px;margin:8px 0}.tips li{margin-bottom:4px}.res{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:10px;background:var(--bg)}.res p{margin:0 0 8px}.res button{margin:0 6px 6px 0}
 #thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}.th{background:#fff;border:1px solid var(--line);position:relative}.th svg{display:block;width:100%;height:auto}.th b{position:absolute;left:4px;top:2px;font-size:11px;color:#b5446e}
 @media print{.noprint{display:none!important}.grid{display:block}.card{border:0;padding:0;margin:0;background:#fff}body{background:#fff}.wrap{padding:0;max-width:none}#thumbs{display:block}.th{border:0;overflow:hidden;page-break-after:always;break-after:page}.th b{display:none}}
 </style></head><body><div class="wrap">
@@ -42,7 +47,7 @@ button.chip.on{background:var(--acc);color:#fff;border-color:var(--acc)}
 <label class="drop">Tap to choose a photo<input type="file" id="f" accept="image/*"></label>
 <div id="cropw"><p class="stat">Drag on the photo to crop around the garment(s), then scan.</p><canvas id="cv"></canvas><div class="row" style="margin-top:8px"><button id="scan">Crop &amp; scan</button><button class="chip" id="full">Use whole photo</button></div></div>
 <p class="stat" id="st">A plain background works best. AI scans the garment’s type and shape for you.</p></div>
-<div class="card"><h2>2. Pick your size</h2><div id="items"><p class="stat">Scan a photo to begin.</p></div>
+<div class="card"><h2>2. Pick your size</h2><div><button class="chip" id="mbtn">📏 How to measure</button><button class="chip" id="fbtn">Find my size</button></div><div id="items"><p class="stat">Scan a photo to begin.</p></div>
 <details><summary class="stat" style="cursor:pointer">Add a garment manually</summary><div class="row" style="margin-top:8px"><select id="addt"><option>dress</option><option>top</option><option>skirt</option><option>pants</option><option>shorts</option></select><button id="add">+ Add</button></div></details></div>
 <div class="card" id="scc" style="display:none"><h2>Which patterns do you want?</h2><div id="chips"></div></div>
 </div><div>
@@ -50,6 +55,15 @@ button.chip.on{background:var(--acc);color:#fff;border-color:var(--acc)}
 <div class="card noprint"><h2>How to sew it</h2><div id="how"></div></div>
 <div class="card"><div class="noprint"><h2>Download sheets</h2><label>Paper size</label><select id="pp"></select><div class="row" style="margin:12px 0"><button id="dl">Download PDF</button><button id="pr">Print</button></div><p class="stat" id="dls">Print at 100% / Actual size. Sheet 1 has the instructions, the last pages show how to sew it, and every sheet has a 5×5 cm scale check.</p></div><div id="thumbs"></div></div>
 </div></div>
+<div class="ovl noprint" id="mp"><div class="pan" role="dialog" aria-modal="true" aria-labelledby="mph"><button class="x" id="mpx" aria-label="Close">✕</button>
+<h2 id="mph">How to measure</h2>
+<svg class="bf" viewBox="0 0 210 300" role="img" aria-label="Body figure showing where to measure bust, waist, hip and height"><circle class="b" cx="100" cy="30" r="16"/><path class="a" d="M68 66C60 72 58 86 56 104L50 160M132 66C140 72 142 86 144 104L150 160"/><path class="b" d="M91 44V56L70 62C66 70 66 76 67 82C66 96 70 110 76 124C70 134 64 142 64 154L70 284H94L100 184L106 284H130L136 154C136 142 130 134 124 124C130 110 134 96 133 82C134 76 134 70 130 62L109 56V44Z"/>
+<ellipse class="m" cx="100" cy="92" rx="36" ry="5"/><ellipse class="m" cx="100" cy="124" rx="26" ry="4"/><ellipse class="m" cx="100" cy="154" rx="38" ry="5"/><path class="m" d="M30 92H62M38 124H72M30 154H60M182 14V286M178 20L182 14L186 20M178 280L182 286L186 280M174 14H190M60 286H190" stroke-width="1.2"/>
+<text x="2" y="96">Bust</text><text x="2" y="128">Waist</text><text x="2" y="158">Hip</text><text transform="translate(198 150) rotate(90)" text-anchor="middle">Height</text></svg>
+<ul class="tips"><li>Measure over thin clothes or underwear, standing relaxed. A friend makes it easier.</li><li><b>Bust:</b> around the fullest part of the chest, keeping the tape level across your back.</li><li><b>Waist:</b> around your natural waist, the narrowest part, where you bend to the side.</li><li><b>Hip:</b> around the fullest part of your bottom, usually 18–22 cm below the waist.</li><li><b>Height:</b> barefoot with your back to a wall, from the floor to the top of your head.</li><li>Keep the tape snug but not tight (one finger fits under it). Don’t add extra: the pattern already adds ease so you can move.</li></ul>
+<h2 id="fsz" style="margin-top:14px">Find my size</h2><p class="stat" style="margin:0">Enter your measurements in cm.</p>
+<div class="row"><label>Bust cm<input type="number" id="mB" inputmode="decimal"></label><label>Waist cm<input type="number" id="mW" inputmode="decimal"></label><label>Hip cm<input type="number" id="mH" inputmode="decimal"></label><label>Height cm<input type="number" id="mht" inputmode="decimal"></label></div>
+<button class="big" id="mgo" style="margin-top:12px">Recommend my size</button><div id="mres"></div></div></div>
 <style id="pgst"></style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -60,8 +74,8 @@ const SZ={XS:{B:80,W:62,H:86,ht:160},S:{B:84,W:66,H:90,ht:163},M:{B:88,W:70,H:94
 const E={fitted:4,regular:6,loose:12};
 const O={dress:{mini:80,knee:100,midi:120,maxi:145},skirt:{mini:40,knee:58,midi:75,maxi:95},top:{crop:-1,regular:0,tunic:1},pants:{cropped:.8,full:1},shorts:{short:.5,knee:1}};
 const DEF={dress:['knee',120],skirt:['knee',130],top:['regular',100],pants:['full',95],shorts:['short',105]};
-let items=[],scope='all';
-const newItem=t=>({type:t,neck:'round',sleeves:'none',length:DEF[t][0],fit:'regular',flare:DEF[t][1],waist:t=='top'?40:100,close:'zipper',size:'M',cus:{...SZ.M}});
+let items=[],scope='all',pref={size:'M',bot:'',cus:{...SZ.M}};
+const newItem=t=>({type:t,neck:'round',sleeves:'none',length:DEF[t][0],fit:'regular',flare:DEF[t][1],waist:t=='top'?40:100,close:'zipper',size:(t=='dress'||t=='top'?'':pref.bot)||pref.size,cus:{...pref.cus}});
 const lbl=i=>{const t=items[i].type,n=items.filter(x=>x.type==t).length,k=items.slice(0,i+1).filter(x=>x.type==t).length;return t[0].toUpperCase()+t.slice(1)+(n>1?' '+k:'')};
 const meas=it=>it.size=='Custom'?it.cus:SZ[it.size];
 const plen=d=>{const p=document.createElementNS('http://www.w3.org/2000/svg','path');p.setAttribute('d',d);return p.getTotalLength()};
@@ -69,7 +83,7 @@ const plen=d=>{const p=document.createElementNS('http://www.w3.org/2000/svg','pa
 function bod(p,back,t){
  const B=p.B,nk=p.nk||'round';let nw=(B/20+3.5)*10,nd=back?22:nw+18;
  if(nk=='boat'){nw*=1.35;if(!back)nd=35}else if(!back&&nk=='v')nd=nw*1.7;else if(!back&&nk=='square')nd=nw+10;
- const sh=B*2.1,bw=(B+p.ease)*2.5,ad=(B/8+10)*10,wy=p.ht*2.5,hy=wy+200,h0=(p.H+p.ease)*2.5,ww=h0*(1-p.fit*.4),hw=Math.max(h0,ww);
+ const sh=B*2.1,bw=(B+p.ease)*2.5,ad=(B/8+10)*10,wy=p.ht*2.5,hy=wy+200,h0=(p.H+p.ease)*2.5,ww=h0*(1-p.fit*.4)*(p.cw?1+(Math.min(1.25,Math.max(.8,p.W/p.H/.745))-1)*Math.min(1,p.fit*2.5):1),hw=Math.max(h0,ww);
  const hemy=t=='top'?wy+[60,210,320][p.v+1]:Math.max(p.v*10*p.ht/165,hy+120),hemw=t=='top'?hw:hw*p.flare;
  const neck=!back&&nk=='v'?`L${nw} 0`:!back&&nk=='square'?`L${nw} ${nd}L${nw} 0`:`Q${nw*.95} ${nd*.95} ${nw} 0`;
  const arm=`M${sh} 45C${sh-10} 110 ${bw-40} ${ad-25} ${bw} ${ad}`;
@@ -91,7 +105,7 @@ function pant(p,back,short){
  return{d:`M0 0L${wf} 0Q${wf+(hf-wf)*.4} ${hipD*.7} ${hf} ${hipD}L${xc+h2} ${hemy}L${xc-h2} ${hemy}L${-ce} ${cd}Q0 ${cd} 0 ${cd*.5}Z`,x0:-ce,w:Math.max(hf,xc+h2),h:hemy,gx:xc};
 }
 function mk(it,lb){
- const m=meas(it),t=it.type,el=t!='dress'&&t!='top'&&it.close=='elastic',p={B:m.B,W:m.W,H:m.H,ht:m.ht,ease:E[it.fit],flare:it.flare/100,fit:it.waist/100,nk:it.neck,v:O[t][it.length],el},out=[],inf=out.inf={elas:Math.round(m.W-2.5)};
+ const m=meas(it),t=it.type,el=t!='dress'&&t!='top'&&it.close=='elastic',p={B:m.B,W:m.W,H:m.H,ht:m.ht,ease:E[it.fit],flare:it.flare/100,fit:it.waist/100,nk:it.neck,v:O[t][it.length],el,cw:it.size=='Custom'},out=[],inf=out.inf={elas:Math.round(m.W-2.5)};
  const A=(n,note,g,o)=>out.push({n:lb+' '+n,note,fold:0,x0:0,...g,...o});
  const zl=c=>[18,20,23,25,30,35,40,45,50,55,60].find(z=>z>=c)||60;
  const band=L=>{L=el?L:(p.W+4)*10+30;inf.band=L;A('WAISTBAND',el?'Cut 1 (elastic casing)':'Cut 1',{d:`M0 0H${L}V80H0Z`,w:L,h:80},{gx:L/2,g1:15,g2:65,ty:45,cut:'b'})};
@@ -251,6 +265,24 @@ $('items').addEventListener('click',e=>{if(e.target.dataset.rm){items.splice(+e.
 $('chips').addEventListener('click',e=>{if(e.target.dataset.s!=null){scope=e.target.dataset.s;renderItems();build()}});
 $('add').onclick=()=>{items.push(newItem($('addt').value));renderItems();build()};
 $('pp').onchange=build;$('gr').onchange=build;$('pr').onclick=()=>window.print();
+/* ---------- measuring + size finder ---------- */
+let fs0=null;
+const closeM=()=>$('mp').classList.remove('on'),openM=f=>{['B','W','H','ht'].forEach(k=>$('m'+k).value=pref.cus[k]);$('mp').classList.add('on');$('mp').scrollTop=0;if(f)$('fsz').scrollIntoView();$('mpx').focus()};
+$('mbtn').onclick=()=>openM(0);$('fbtn').onclick=()=>openM(1);$('mpx').onclick=closeM;
+$('mp').addEventListener('click',e=>{if(e.target==$('mp'))closeM()});
+document.addEventListener('keydown',e=>{if(e.key=='Escape')closeM()});
+$('mgo').onclick=()=>{const m={};['B','W','H','ht'].forEach(k=>m[k]=+$('m'+k).value);
+ if(['B','W','H'].some(k=>!(m[k]>40&&m[k]<200))){$('mres').innerHTML='<div class="res"><p>Please enter your bust, waist and hip in centimetres.</p></div>';return}
+ if(!(m.ht>100&&m.ht<230))m.ht=pref.cus.ht;
+ const near=k=>Object.keys(SZ).reduce((a,s)=>Math.abs(SZ[s][k]-m[k])<Math.abs(SZ[a][k]-m[k])?s:a),r={B:near('B'),W:near('W'),H:near('H')},
+  off=['B','W','H'].some(k=>m[k]<SZ.XS[k]-4||m[k]>SZ.XL[k]+4),same=r.B==r.W&&r.W==r.H;
+ fs0={m,top:r.B,bot:r.H};
+ $('mres').innerHTML='<div class="res">'+(same&&!off?`<p><b>Your size is ${r.B}.</b> Your bust, waist and hip all match it.</p><button data-u="size">Use size ${r.B}</button>`
+  :`<p>${off?'Some of your measurements are outside the XS–XL chart. ':''}Your bust is closest to <b>${r.B}</b>, your waist to <b>${r.W}</b> and your hip to <b>${r.H}</b>.${same?'':' That’s very common: few bodies match one size exactly.'}</p><p>Instead of one size, use your own measurements. The pattern then follows your bust, waist and hip and blends smoothly between them (this is called grading between sizes), and lengths follow your height.</p><button data-u="cus">Use my measurements</button>`+(!off&&r.B!=r.H?`<button class="chip" data-u="split">${r.B} for tops &amp; dresses, ${r.H} for bottoms</button>`:''))+'</div>'};
+$('mres').addEventListener('click',e=>{const u=e.target.dataset.u;if(!u||!fs0)return;const{m,top,bot}=fs0,cus={B:m.B,W:m.W,H:m.H,ht:m.ht};
+ pref=u=='cus'?{size:'Custom',bot:'',cus}:{size:top,bot:u=='split'?bot:'',cus};
+ items.forEach(it=>{it.cus={...cus};it.size=pref.size=='Custom'||it.type=='dress'||it.type=='top'?pref.size:pref.bot||pref.size});
+ renderItems();build();closeM();st(items.length?'Your size is applied. You can still change it for each garment.':'Your size is saved and will be used when you scan a photo.')});
 const rast=(s,PW,PH)=>new Promise((ok,no)=>{const u=URL.createObjectURL(new Blob([s],{type:'image/svg+xml;charset=utf-8'})),i=new Image();i.onload=()=>{const k=Math.min(5.9,3000/Math.max(PW,PH)),c=document.createElement('canvas');c.width=Math.round(PW*k);c.height=Math.round(PH*k);const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(i,0,0,c.width,c.height);URL.revokeObjectURL(u);ok(c.toDataURL('image/jpeg',.85))};i.onerror=no;i.src=u});
 $('dl').onclick=async()=>{const b=$('dl'),t=b.textContent,[PW,PH]=PAPERS[$('pp').value];if(!SV.length)return;b.disabled=true;b.textContent='Building PDF…';
  try{const pdf=new window.jspdf.jsPDF({unit:'mm',format:[PW,PH],orientation:'p'});
